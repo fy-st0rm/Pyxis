@@ -1,0 +1,103 @@
+
+                                 ____  _  _  _  _  ____  ___ 
+                                (  _ \( \/ )( \/ )(_  _)/ __)
+                                 )___/ \  /  )  (  _)(_ \__ \
+                                (__)   (__) (_/\_)(____)(___/
+
+
++----------+
+|          |         +----------+         +------------------+
+|  Client  |----|>---|          |         |                  |              +-------------------+
+|          |         |          |----|>---|  Client Handler  |------|>------|                   |
++----------+         |          |         |                  |              |                   |
+                     |          |         +------------------+              |                   |
+                     |  Server  |                                           |   Pyxis Database  |
+                     |          |         +------------------+              |                   |
++----------+         |          |         |                  |              |                   |
+|          |         |          |----|>---|  Remote Handler  |------|>------|                   |
+|  Remote  |----|>---|          |         |                  |              +-------------------+
+|          |         +----------+         +------------------+
++----------+
+
+
+** Client:
+    - Holds the connected user ip and port
+    - Bridge between frontend and backend
+    - Should get user inputs and pass it to the network
+
+** Remote:
+    - A background daemon which acts like a server for peer to peer connection
+    - Should handle data storage
+    - Should handle data sharing
+    - It should tell the remote handler what data and which data is stored in the users device
+
+** Server:
+	- A landing place for the users and remotes
+
+** Client handler:
+    - Should handle connection between client and servers
+    - Should handle account system
+    - Should be able to parse users protocols and act according to it
+    - Store the user credientials like "username", "password hash", "salt" in a json centralized database
+
+** Remote handler:
+    - Stores all the connected remotes connections
+    - Stores the info of data each remote has been storing
+    - Should properly communicate with the database
+
+** Pyxis Database:
+    - Should handle basic protocols of "Upload" and "Download" data
+    - Should propery decentralize the data storing capacity
+    - Increase data reduency according to the number of users
+    - Proper encryption of the data
+    - Fast and powerful compression of data to minimize the size of data to be stored
+    - Should properly communicate with the remote handler for download and upload of the data
+
+
+## TODOs:
+	** Pyxis API:
+		[ ] Create connection with pyxis server
+		[ ] Authontications system
+		[ ] Fetch and query system:
+			[ ] Normal queries:
+				[ ] Authentication queries
+				[ ] connect as remote and connect as client queries
+			[ ] Database queries:
+				[ ] upload data in database
+				[ ] fetch data from database
+
+	** Client:
+		[ ] Connect using Pyxis API
+		[ ] Create login and signup system using Pyxis API
+		[ ] Add data upload and download feature using API's fetching and query system
+
+	** Remote:
+		[ ] Connect to the server using Pyxis API
+		[ ] Query the device as a remote server
+		[ ] Wait for the instruction sent by the remote handlers
+		[ ] Instructions:
+			[ ] Store this data
+			[ ] Fetch this data from harddrive and send it to the server
+
+	** Remote handler:
+		[ ] Handle the remotes connected in the server
+		[ ] Store the remote servers connections
+		[ ] Store the records of the data stored by each remote servers
+		[ ] Connect to the database for storing and retreiving of data
+
+	** Pyxis Database:
+		[ ] Accept query protocols
+		[ ] Authentication for the protocols
+		[ ] For upload case:
+			[ ] Compression
+			[ ] Ecryption
+			[ ] Division of the data according to the number of remote servers
+			[ ] Data duplication
+			[ ] Instruct the remote servers to store the datas from remote handler
+		[ ] For download case:
+			[ ] Fetch the required data and all the chunks from the remote servers
+			[ ] Combine all the datas
+			[ ] Decrypt
+			[ ] Decompress
+			[ ] Send to client handler for the client to retrive
+
