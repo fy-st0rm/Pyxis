@@ -1,22 +1,20 @@
 # Pyxis apis
-from handlers.client_handler import *
-from handlers.remote_handler import *
-from database.database       import *
+from pyxis_handlers.client_handler import *
+from pyxis_handlers.remote_handler import *
+from pyxis_database.pyxis_database import *
 
 from pyxis_api.util          import *
 from pyxis_api.pyxis_types   import *
 from pyxis_api.conf			 import *
 
-# Standard python
-import threading
-
 
 class Server:
 	def __init__(self):
-		self.database = Database()
+		self.database = Pyxis_Database()
 		self.client_handler = ClientHandler(self.database)
 		self.remote_handler = RemoteHandler(self.database)
-		self.database.handler = self.remote_handler
+		self.database.client_handler = self.client_handler
+		self.database.remote_handler = self.remote_handler
 
 		self.__start_socket_server()
 		self.__running = True
