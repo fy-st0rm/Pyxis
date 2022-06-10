@@ -59,6 +59,11 @@ class Remote:
 		file = input("Enter file path> ")
 		with open(file, "rb") as r:
 			data = r.read()
+
+		if len(data) == 0:
+			pyxis_warning("File empty.")
+			exit(1)
+
 		query = pQuery(["STORE", data], "123456789")
 		self.api.query(query)
 	
