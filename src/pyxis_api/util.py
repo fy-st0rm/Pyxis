@@ -1,5 +1,6 @@
 from pyxis_api.conf        import *
 from pyxis_api.pyxis_types import *
+from pyxis_api.pyxis_const import *
 
 # Terminal colors 
 class Colors:
@@ -47,12 +48,12 @@ def pyxis_send(conn, data):
 	# If the data is bigger than the buffer
 	padd = BUFF_CAP - (len(new_data) % BUFF_CAP)
 	new_data += b" " * padd
-	amt = int(len(new_data) / BUFF_CAP)
 
 	# Sending the packet information
 	info = pResult("Meta data info", f"{len(new_data)}:{padd}", True)
 	__pyxis_send(conn, pickle.dumps(info))
 
+	print(len(new_data))
 	for i in range(0, len(new_data), BUFF_CAP):
 		__pyxis_send(conn, new_data[i:i+BUFF_CAP])
 
@@ -69,3 +70,25 @@ def pyxis_recv(conn):
 	# Remove the excess padding
 	data.strip(b" " * padd)
 	return pickle.loads(data)
+
+# Storage directory location
+def pyxis_get_storage_path(ops):
+	if ops == "Linux":
+		if 'ANDROID_STORAGE' in os.environ:
+			path = "/storage/emulated/0/Android/data/" 
+			if not os.path.exists(path + PYXIS_STORAGE_DIR):
+				os.mkdir(path + PYXIS_STORAGE_DIR)
+			path += PYXIS_STORAGE_DIR + "/"
+			return path
+		else:
+			path = os.path.expanduser("~") + "/.config/"
+			if not os.path.exists(path + PYXIS_STORAGE_DIR):
+				os.mkdir(path + PYXIS_STORAGE_DIR)
+			path += PYXIS_STORAGE_DIR + "/"
+			return path
+	elif ops == "Windows":
+		raise NotImplemented("Windows has not been implemented yet")
+	else:
+		raise NotImplemented(f"Not implemented for os `{ops}`")
+
+

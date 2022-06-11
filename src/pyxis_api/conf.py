@@ -9,9 +9,10 @@ import random
 import os
 import tarfile
 import io
+import platform
 
-DELAY = 0.2
-DATA_DUPLICATION_AMT = 2
+DELAY = 0.1
+DATA_DUPLICATION_AMT = 0
 
 # Server constants
 SV_IP_TYPE = socket.AF_INET
@@ -26,5 +27,5 @@ else:
 PORT = 6969
 
 # Buffers
-BUFF_CAP = 2048 
+BUFF_CAP = 1_048_576
 FORMAT   = "utf-8"

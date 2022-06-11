@@ -6,6 +6,7 @@ from pyxis_database.pyxis_database import *
 from pyxis_api.util          import *
 from pyxis_api.pyxis_types   import *
 from pyxis_api.conf			 import *
+from pyxis_api.pyxis_const   import *
 
 
 class Server:
@@ -33,21 +34,20 @@ class Server:
 		pyxis_sucess(f"{addr} has just connected.")
 
 		# Parsing the query
-		#query = pickle.loads(conn.recv(BUFF_CAP))
 		query = pyxis_recv(conn)
 
 		# Checking if the command is connect or not. If not return.
-		if query.cmd[0] != "CONNECT":
+		if query.cmd[0] != CONNECT:
 			pyxis_send(conn, pResult(f"`{query.cmd[0]}` is an invalid command. During the first connection the command should be `CONNECT [CLIENT/REMOTE]` only.", None, False))
 			return
 
 		# Checking for which connection it is
-		if query.cmd[1] == "REMOTE":
+		if query.cmd[1] == REMOTE:
 			# Sucessfulling adding a new remote
 			self.remote_handler.add_new_remote(conn, addr)
 			pyxis_send(conn, pResult("Sucessfully connected as remote.", None, True))
 
-		elif query.cmd[1] == "CLIENT":
+		elif query.cmd[1] == CLIENT:
 			pyxis_send(conn, pResult("Client handler hasnt been implemented yet.", None, False))
 
 		else:
@@ -59,10 +59,16 @@ class Server:
 		pyxis_sucess(f"Server has been started on {IP}.")
 		self.server.listen()
 		while self.__running:
-			conn, addr = self.server.accept()
+			try:
+				conn, addr = self.server.accept()
 
-			thread = threading.Thread(target=self.__handle_connection, args=(conn, addr))
-			thread.start()
+				thread = threading.Thread(target=self.__handle_connection, args=(conn, addr))
+				thread.start()
+			except KeyboardInterrupt:
+				self.__running = False
+				self.remote_handler.disconnect()
+
+		pyxis_error(f"Shutting down server on {IP}.")
 
 if __name__ == "__main__":
 	server = Server()
