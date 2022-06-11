@@ -5,9 +5,14 @@ from pyxis_api.conf		 import *
 class Remote:
 	def __init__(self):
 		self.api = Pyxis_API()
+		self.queries = []
 		self.__connect()
 
 		self.running = True
+
+	def __connect(self):
+		query = pQuery(["CONNECT", "REMOTE"], None)
+		self.api.query(query)
 	
 	def __store(self, data, pub_key):
 		# Generating file name
@@ -29,19 +34,24 @@ class Remote:
 	def __listener(self):
 		while self.running:
 			# Getting the instructions from the remote handler
-			query = pyxis_recv(self.api.server)
-			self.query(query)
+			recv = pyxis_recv(self.api.server)
+			self.__parse_info(recv)
 	
-	def __connect(self):
-		query = pQuery(["CONNECT", "REMOTE"], None)
-		res = self.api.query(query)
-		if res.sucess:
-			pyxis_sucess(res.log)
+	def __parse_info(self, recv):
+		if type(recv) == pQuery:
+			self.__parse_query(recv)
+		elif type(recv) == pResult:
+			self.__parse_resut(recv)
 		else:
-			pyxis_error(res.log)
-			exit(1)
+			pyxis_error(f"Unknown type of data recevied\nTYPE: {type(recv)} DATA: {recv}")
 
-	def query(self, qry):
+	def __parse_resut(self, recv):
+		if recv.sucess:
+			pyxis_sucess(recv.log)
+		else:
+			pyxis_error(recv.log)
+
+	def __parse_query(self, qry):
 		# TODO: Exception handling here.
 		# TODO: No feed back is given to the server so fix that
 

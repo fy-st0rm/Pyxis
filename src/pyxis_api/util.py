@@ -50,21 +50,21 @@ def pyxis_send(conn, data):
 	amt = int(len(new_data) / BUFF_CAP)
 
 	# Sending the packet information
-	info = pResult("Meta data info", f"{amt}:{padd}", True)
+	info = pResult("Meta data info", f"{len(new_data)}:{padd}", True)
 	__pyxis_send(conn, pickle.dumps(info))
 
 	for i in range(0, len(new_data), BUFF_CAP):
-		__pyxis_send(conn, new_data[i:i+BUFF_CAP])	
+		__pyxis_send(conn, new_data[i:i+BUFF_CAP])
 
 def pyxis_recv(conn):
 	info = pickle.loads(__pyxis_recv(conn))
 	info = info.data.split(":")
-	amt, padd = int(info[0]), int(info[1])
+	sz, padd = int(info[0]), int(info[1])
 	
 	# Collecting the data and combining it
 	data = b""
-	for i in range(amt):
-		data += __pyxis_recv(conn)
+	while len(data) < sz:
+		data += __pyxis_recv(conn) 
 	
 	# Remove the excess padding
 	data.strip(b" " * padd)
