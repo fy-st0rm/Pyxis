@@ -13,12 +13,14 @@ class RemoteHandler:
 	def __handle_remote(self, conn, addr):
 		active = True
 		while active:
-			time.sleep(DELAY)
-			query = pickle.loads(conn.recv(BUFF_CAP))
+			query = pyxis_recv(conn)
 
 			# Parsing the query
 			if query.cmd[0] == "STORE":
+				pyxis_send(conn, pResult(f"Storing data...", None, True))
 				self.database.query(query)
+			else:
+				pyxis_send(conn, pResult(f"Unknown `{cmd[0]}`.", None, False))
 
 		self.remotes.pop(addr)
 	
@@ -30,7 +32,7 @@ class RemoteHandler:
 		i = 0
 		for j in data:
 			query = pQuery(["STORE", j], pub_key)
-			remotes[i].send(pickle.dumps(query))
+			pyxis_send(remotes[i], query)
 			i += 1
 			if i >= len(remotes): i = 0
 

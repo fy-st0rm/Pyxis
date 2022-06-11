@@ -35,7 +35,7 @@ class Pyxis_Database:
 		# Chunking the data
 		chunk = []
 		each = int(len(data) / remotes_no)
-		for i in range(remotes_no):
+		for i in range(0, len(data), each):
 			meta = f"[{uid}:{i}:{n}:{pub_key}]".encode(FORMAT)
 			chunk.append(meta + data[i:i+each])
 		
@@ -46,6 +46,9 @@ class Pyxis_Database:
 		# Shuffling the data
 		random.shuffle(chunk)
 
+		for i in chunk:
+			print(i)
+			print("\n")
 		# Sending the data to remote handler to distribute throuhout the network
 		self.remote_handler.distribute_data(chunk, pub_key)
 

@@ -18,11 +18,10 @@ class Pyxis_API:
 		except Exception as e:
 			pyxis_error(e)
 			pyxis_error("Failed to connect to `pyxis server`.")
+			exit(1)
 	
 	def query(self, qry):
-		self.server.send(pickle.dumps(qry))
-		time.sleep(DELAY)
-
-		res = pickle.loads(self.server.recv(BUFF_CAP))
+		pyxis_send(self.server, qry)
+		res = pyxis_recv(self.server)
 		return res 
 

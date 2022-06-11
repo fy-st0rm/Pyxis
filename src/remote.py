@@ -28,10 +28,8 @@ class Remote:
 	
 	def __listener(self):
 		while self.running:
-			time.sleep(DELAY)
-
 			# Getting the instructions from the remote handler
-			query = pickle.loads(self.api.server.recv(BUFF_CAP))
+			query = pyxis_recv(self.api.server)
 			self.query(query)
 	
 	def __connect(self):

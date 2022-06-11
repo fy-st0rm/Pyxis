@@ -33,24 +33,25 @@ class Server:
 		pyxis_sucess(f"{addr} has just connected.")
 
 		# Parsing the query
-		query = pickle.loads(conn.recv(BUFF_CAP))
+		#query = pickle.loads(conn.recv(BUFF_CAP))
+		query = pyxis_recv(conn)
 
 		# Checking if the command is connect or not. If not return.
 		if query.cmd[0] != "CONNECT":
-			conn.send(pickle.dumps(pResult(f"`{query.cmd[0]}` is an invalid command. During the first connection the command should be `CONNECT [CLIENT/REMOTE]` only.", None, False)))
+			pyxis_send(conn, pResult(f"`{query.cmd[0]}` is an invalid command. During the first connection the command should be `CONNECT [CLIENT/REMOTE]` only.", None, False))
 			return
 
 		# Checking for which connection it is
 		if query.cmd[1] == "REMOTE":
 			# Sucessfulling adding a new remote
 			self.remote_handler.add_new_remote(conn, addr)
-			conn.send(pickle.dumps(pResult("Sucessfully connected as remote.", None, True)))
+			pyxis_send(conn, pResult("Sucessfully connected as remote.", None, True))
 
 		elif query.cmd[1] == "CLIENT":
-			conn.send(pickle.dumps(pResult("Client handler hasn`t been implemented yet.", None, False)))
+			pyxis_send(conn, pResult("Client handler hasnt been implemented yet.", None, False))
 
 		else:
-			conn.send(pickle.dumps(pResult(f"Unknown type `{query.cmd[1]}`. `CONNECT` has only two types `REMOTE/CLIENT`.", None, False)))
+			pyxis_send(conn, pResult(f"Unknown type `{query.cmd[1]}`. `CONNECT` has only two types `REMOTE/CLIENT`.", None, False))
 
 		# pyxis_warning(f"{addr} has just disconnected.")
 	
