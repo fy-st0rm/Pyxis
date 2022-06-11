@@ -6,7 +6,7 @@ from pyxis_api.conf		   import *
 
 class Pyxis_API:
 	def __init__(self):
-		self.sv_ip = IP
+		self.sv_ip = "192.168.1.68" 
 		self.sv_port = 6969
 
 		self.__connect()
