@@ -1,2 +1,9 @@
 import platform
-print(platform.system())
+import os
+
+dev = platform.system()
+if dev == "Linux":
+	path = os.path.expanduser("~")
+	print(path)
+
+
