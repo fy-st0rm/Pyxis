@@ -23,7 +23,7 @@ class Server:
 		try:
 			self.server = socket.socket(SV_IP_TYPE, socket.SOCK_STREAM)
 			self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			self.server.bind((IPv6, PORT))
+			self.server.bind((IP, PORT))
 		except Exception as e:
 			pyxis_error(e)
 			pyxis_error("Failed to start `pyxis server`.")
@@ -56,7 +56,7 @@ class Server:
 		# pyxis_warning(f"{addr} has just disconnected.")
 	
 	def run(self):
-		pyxis_sucess("Server has been started.")
+		pyxis_sucess(f"Server has been started on {IP}.")
 		self.server.listen()
 		while self.__running:
 			conn, addr = self.server.accept()
