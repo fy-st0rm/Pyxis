@@ -30,14 +30,14 @@ class RemoteHandler:
 
 		self.remotes.pop(addr)
 	
-	def distribute_data(self, data, pub_key):
+	def distribute_data(self, file, data, pub_key):
 		# TODO: Slow because of interation for all data 
 		remotes = list(self.remotes.values())
 
 		# Sending data to all the remotes to store
 		i = 0
 		for j in data:
-			query = pQuery([STORE, [j, data[j]]], pub_key)
+			query = pQuery([STORE, [file, j, data[j]]], pub_key)
 			pyxis_send(remotes[i], query)
 			i += 1
 			if i >= len(remotes): i = 0

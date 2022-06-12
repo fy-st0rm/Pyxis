@@ -53,7 +53,6 @@ def pyxis_send(conn, data):
 	info = pResult("Meta data info", f"{len(new_data)}:{padd}", True)
 	__pyxis_send(conn, pickle.dumps(info))
 
-	print(len(new_data))
 	for i in range(0, len(new_data), BUFF_CAP):
 		__pyxis_send(conn, new_data[i:i+BUFF_CAP])
 
@@ -87,7 +86,7 @@ def pyxis_get_storage_path(ops):
 			path += PYXIS_STORAGE_DIR + "/"
 			return path
 	elif ops == "Windows":
-		raise NotImplemented("Windows has not been implemented yet")
+		raise NotImplemented("Windows path system has not been implemented yet")
 	else:
 		raise NotImplemented(f"Not implemented for os `{ops}`")
 

@@ -16,17 +16,15 @@ class Remote:
 	
 	def __store(self, data, pub_key):
 		# Getting the path to store data
-		name = data[0]
-		data = data[1]
+		file = data[0]
+		name = data[1]
+		data = data[2]
 		path = pyxis_get_storage_path(platform.system())
 
-		# Storing data as tarfile
-		params_sio = io.BytesIO(data)
-		archive = tarfile.open(path + name + ".tgz", "w:gz")
-		tarinfo = tarfile.TarInfo(name = name)
-		tarinfo.size = len(data)
-		archive.addfile(tarinfo, params_sio)
-		archive.close()
+		with pyzipper.AESZipFile(path + name + ".zip", "w", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zf:
+			zf.setpassword(pub_key.encode(FORMAT))
+			zf.writestr(name, data)
+		pyxis_sucess("Finished storing.")
 	
 	def __fetch(self, file, pub_key):
 		pass
@@ -73,7 +71,7 @@ class Remote:
 			exit(1)
 
 		pyxis_sucess(f"Sucessfully read file {file}.")
-		qry = pQuery([STORE, data], None)
+		qry = pQuery([STORE, file.split("/")[1], data], "password")
 		self.api.query(qry)
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ import os
 import tarfile
 import io
 import platform
+import pyzipper
 
 DELAY = 0.1
 DATA_DUPLICATION_AMT = 0
