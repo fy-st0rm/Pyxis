@@ -14,6 +14,12 @@ class RemoteHandler:
 
 	def add_new_remote(self, conn):
 		self.remotes.update({conn: []})
+	
+	def remove_conn(self, conn):
+		datas = self.remotes[conn]
+		for data in datas:
+			self.data_register[data[0]][data[1]].remove(conn)
+		self.remotes.pop(conn)
 
 	def disconnect(self):
 		pyxis_warning("IMPLEMENT DISCONNECT FUNCTION IN REMOTE HANDLER")
@@ -55,4 +61,19 @@ class RemoteHandler:
 			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully added the data into remote register."], None)
 		else:
 			return pQuery(qry.to, qry.by, FAILED, [f"Unknown `remote handler` command: {qry.cmd}"], None)
+	
+	# Data distributor
+	def distribute_data(self, chunks, pub_key):
+		remotes = list(self.remotes.keys())
+
+		# Sending data to all the remotes to store
+		i = 0
+		for j in chunks:
+			qry = pQuery(REM_HANDLER, REMOTE, STORE, [j, chunks[j]], pub_key)
+			pyxis_send(remotes[i], qry)
+
+			i += 1
+			if i >= len(remotes): i = 0
+
+		return pQuery(REM_HANDLER, PYX_DATABASE, SUCESS, ["Sucessfully stored in all remotes."], None)
 

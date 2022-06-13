@@ -54,9 +54,40 @@ class Remote:
 			pyxis_error(res.params[0])
 			exit(1)
 	
+	# Storing and fetching
+	def __store(self, qry):
+		pub_key = qry.auth
+		name = qry.params[0]
+		data = qry.params[1]
+		path = pyxis_get_storage_path(platform.system())
+
+		pyxis_sucess("Compressing and encrypting.")
+		with pyzipper.AESZipFile(path + name + ".zip", "w", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zf:
+			zf.setpassword(pub_key.encode())
+			zf.writestr(name, data)
+		pyxis_sucess("Sucessfully stored data.")
+
+	def __fetch(self):
+		pass
+	
+	# Listener for remote handler
+	def __listen(self):
+		active = True
+		while active:
+			recv = pyxis_recv(self.api.server)
+			if recv.cmd == STORE:
+				self.__store(recv)
+			elif recv.cmd == FETCH:
+				print(recv)
+	
 	def run(self):
-		self.__connect()
-		self.__register_data()
+		try:
+			self.__connect()
+			self.__register_data()
+			self.__listen()
+		except:
+			pass
+
 		self.__disconnect()
 
 if __name__ == "__main__":

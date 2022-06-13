@@ -13,7 +13,7 @@ import platform
 import pyzipper
 import hashlib
 
-DELAY = 0.2
+DELAY = 0.1
 DATA_DUPLICATION_AMT = 0
 
 # Server constants

@@ -11,16 +11,53 @@ class Pyxis_Database:
 		self.client_handler = None
 		self.remote_handler = None
 	
-	def query(self, qry):
-		# Parsing the query
+	def parse_query(self, conn, qry):
+		if len(qry.params) != 2:
+			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"{qry.cmd} requires two arguments."], None)
 
-		if len(qry.cmd) <= 1:
-			return qResult("Database query command should have atleast one parameter.", None, False)
+		if qry.cmd == STORE:
+			return self.__store(qry)
+		elif qry.cmd == FETCH:
+			return self.__fetch(qry.params, qry.auth)
+		else:
+			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Unknown `Pyxis database` command {qry.cmd}."], None)
 
-		if qry.cmd[0] == STORE:
-			return self.__store(qry.cmd[1], qry.cmd[2], qry.auth)
-		elif qry.cmd[0] == FETCH:
-			return self.__fetch(qry.cmd[1], qry.auth)
+	def __store(self, qry):
+		try:
+			file = qry.params[0]
+			data = qry.params[1]
+			pub_key = qry.auth
+
+			uid = uuid.uuid4() 
+			remotes, remotes_no = self.remote_handler.get_remotes()
+
+			# Adding a padding to make it properly chunkable
+			padd = remotes_no - len(data) % remotes_no
+			data += b" " * padd
+
+			# Chunking the data
+			chunks = {} 
+			each = int(len(data) / remotes_no)
+			chunk_no = 0
+			for i in range(0, len(data), each):
+				name = f"{uid}:{chunk_no}:{padd}:{remotes_no}:{file}:" + str(uuid.uuid4()).split("-")[0]
+				chunks.update({name: data[i:i+each]})
+				chunk_no += 1
+
+			# Sending the data to remote handler to distribute throuhout the network
+			res = self.remote_handler.distribute_data(chunks, pub_key)
+			if res.cmd == FAILED:
+				raise Exception(res.params[0])
+			
+			pyxis_warning("##DATA STORED INFO##")
+			pyxis_warning(f"Total chunks: {chunk_no}")
+			pyxis_warning(f"Total remotes: {remotes_no}")
+
+			return pQuery(PYX_DATABASE, qry.by, SUCESS, [uid, remotes_no], None)
+
+		except Exception as e:
+			pyxis_error("Failed to distribute files.")
+			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Failed to store data.\nReason: {e}"], None)
 
 	def __fetch(self, uid, pub_key):
 		try:
@@ -52,34 +89,4 @@ class Pyxis_Database:
 		except Exception as e:
 			pyxis_error(f"Failed to fetch file.\nReason: {e}")
 			return pResult(f"Failed to fetch file.\nReason: {e}", None, False)
-
-	def __store(self, file, data, pub_key):
-		try:
-			uid = uuid.uuid4() 
-			remotes, remotes_no = self.remote_handler.get_remotes()
-
-			# Adding a padding to make it properly chunkable
-			padd = remotes_no - len(data) % remotes_no
-			data += b" " * padd
-
-			# Chunking the data
-			chunk = {} 
-			each = int(len(data) / remotes_no)
-			chunk_no = 0
-			for i in range(0, len(data), each):
-				name = f"{uid}:{chunk_no}:{padd}:{remotes_no}:{file}:" + str(uuid.uuid4()).split("-")[0]
-				chunk.update({name: data[i:i+each]})
-				chunk_no += 1
-
-			# Sending the data to remote handler to distribute throuhout the network
-			self.remote_handler.distribute_data(file, chunk, pub_key)
-			
-			pyxis_warning("##DATA STORED INFO##")
-			pyxis_warning(f"Total chunks: {len(chunk)}")
-			pyxis_warning(f"Total remotes: {remotes_no}")
-			return pResult(DATA_STORED, [uid, remotes_no], True)
-
-		except Exception as e:
-			pyxis_error("Failed to distribute files.")
-			return pResult(f"Failed to store data.\nReason: {e}", None, False)
 

@@ -16,10 +16,14 @@ class Server:
 		self.__start_socket_server()
 		self.__running = True
 
+		self.conns = {}
+
 		# Handlers
 		self.pyxis_database = Pyxis_Database()
-		self.remote_handler = RemoteHandler(self.pyxis_database)
 		self.client_handler = ClientHandler(self.pyxis_database)
+		self.remote_handler = RemoteHandler(self.pyxis_database)
+
+		self.pyxis_database.client_handler = self.client_handler
 		self.pyxis_database.remote_handler = self.remote_handler
 
 	def __start_socket_server(self):
@@ -42,10 +46,12 @@ class Server:
 		# Checking for which connection it is
 		if qry.params[0] == REMOTE:
 			self.remote_handler.add_new_remote(conn)
+			self.conns.update({conn: REMOTE})
 			pyxis_send(conn, pQuery(qry.to, qry.by, SUCESS, ["Sucessfully connected as remote."], None))
 
 		elif qry.params[0] == CLIENT:
 			self.client_handler.add_new_client(conn)
+			self.conns.update({conn: CLIENT})
 			pyxis_send(conn, pQuery(qry.to, qry.by, SUCESS, ["Sucessfully connected as client."], None))
 
 		else:
@@ -69,11 +75,14 @@ class Server:
 			elif qry.to == REM_HANDLER:
 				res = self.remote_handler.parse_query(conn, qry)
 			elif qry.to == PYX_DATABASE:
-				pass
+				res = self.pyxis_database.parse_query(conn, qry)
 			else:
 				res = pQuery(PYX_SERVER, qry.by, FAILED, [f"Command: {qry.cmd} doesnt exists."], None)
 
 			pyxis_send(conn, res)
+
+		if self.conns[conn] == REMOTE:
+			self.remote_handler.remove_conn(conn)
 
 		pyxis_error(f"{addr} disconnected.")
 

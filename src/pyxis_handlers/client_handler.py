@@ -3,6 +3,8 @@ from pyxis_api.pyxis_api   import *
 from pyxis_api.conf		   import *
 from pyxis_api.pyxis_const import *
 
+# TODO: Save the client database in a decentralized internet 
+
 class ClientHandler:
 	def __init__(self, database):
 		self.database = database
@@ -28,18 +30,6 @@ class ClientHandler:
 		with open(os.path.join("../client_data.json"), "w") as w:
 			json.dump(self.cli_data, w, indent = 4)
 
-	def authenticate(self, conn, qry):
-		name = qry.params[1]
-		pub_key = qry.auth
-
-		if name not in self.cli_data:
-			return pQuery(CLI_HANDLER, qry.by, FAILED, [f"Username: {name} doesn't exists."], None)
-		
-		if pub_key != self.cli_data[name]["pwd"]:
-			return pQuery(CLI_HANDLER, qry.by, FAILED, [f"Public key didn't matched."], None)
-
-		return pQuery(CLI_HANDLER, qry.by, SUCESS, [f"Sucessfully connected as client."], None)
-	
 	# Login and Signup functions
 	def __login(self, conn, qry):
 		name = qry.params[1]
