@@ -52,8 +52,6 @@ class Server:
 
 		else:
 			pyxis_send(conn, pResult(f"Unknown type `{query.cmd[1]}`. `CONNECT` has only two types `REMOTE/CLIENT`.", None, False))
-
-		# pyxis_warning(f"{addr} has just disconnected.")
 	
 	def run(self):
 		pyxis_sucess(f"Server has been started on {IP}.")
@@ -66,8 +64,8 @@ class Server:
 				thread.start()
 			except KeyboardInterrupt:
 				self.__running = False
-				self.remote_handler.disconnect()
-
+		
+		self.remote_handler.disconnect()
 		pyxis_error(f"Shutting down server on {IP}.")
 
 if __name__ == "__main__":

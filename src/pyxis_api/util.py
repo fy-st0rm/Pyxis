@@ -28,7 +28,7 @@ def pyxis_warning(msg):
 
 # Send and recv functions
 def __pyxis_send(conn, data):
-	time.sleep(DELAY)
+	time.sleep(2.5 * DELAY)
 	conn.send(data)
 
 def __pyxis_recv(conn):
@@ -40,7 +40,7 @@ def pyxis_send(conn, data):
 
 	# If the data is below the buffer capacity
 	if len(new_data) <= BUFF_CAP:
-		info = pResult("Meta data info", f"{1}:{0}", True)
+		info = pResult("Meta data info", f"{len(new_data)}:{0}", True)
 		__pyxis_send(conn, pickle.dumps(info))
 		__pyxis_send(conn, new_data)
 		return

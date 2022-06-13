@@ -12,7 +12,7 @@ import io
 import platform
 import pyzipper
 
-DELAY = 0.1
+DELAY = 0.2
 DATA_DUPLICATION_AMT = 0
 
 # Server constants
@@ -28,5 +28,6 @@ else:
 PORT = 6969
 
 # Buffers
-BUFF_CAP = 1_048_576
+# BUFF_CAP = 1_048_576
+BUFF_CAP = 1_000_000
 FORMAT   = "utf-8"
