@@ -11,6 +11,7 @@ import tarfile
 import io
 import platform
 import pyzipper
+import hashlib
 
 DELAY = 0.2
 DATA_DUPLICATION_AMT = 0

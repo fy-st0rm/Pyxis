@@ -19,7 +19,9 @@ class Pyxis_API:
 			pyxis_error(e)
 			pyxis_error("Failed to connect to `pyxis server`.")
 			exit(1)
-	
+
 	def query(self, qry):
 		pyxis_send(self.server, qry)
+		recv = pyxis_recv(self.server)
+		return recv
 
