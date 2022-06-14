@@ -10,7 +10,7 @@ REM_HANDLER  = "REM_HANDLER"
 PYX_DATABASE = "PYX_DATABASE"
 
 # Connection command
-CONNECT = "CONNECT"
+CONNECT    = "CONNECT"
 DISCONNECT = "DISCONNECT"
 
 # Flag based commands
@@ -18,14 +18,18 @@ SUCESS = "SUCESS"
 FAILED = "FAILED"
 
 # User based commands
-LOGIN = "LOGIN"
+LOGIN  = "LOGIN"
 SIGNUP = "SIGNUP"
 
 # Database related commands 
-STORE = "STORE"
-FETCH = "FETCH"
-FETCHED = "FETCHED"
+STORE          = "STORE"
+STORED         = "STORED"
+STORED_FAILED  = "STORED_FAILED"
+
+FETCH          = "FETCH"
+FETCHED        = "FETCHED"
 FETCHED_FAILED = "FETCHED_FAILED"
+
 REG_DATA = "REG_DATA"
-META = "META"
+META     = "META"
 

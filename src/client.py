@@ -49,23 +49,26 @@ class Client:
 
 	# Store and fetch
 	def __store(self):
-		file = input("file> ")
-		with open(os.path.join(file), "rb") as r:
-			data = r.read()
-		if len(data) <= 0:
-			pyxis_error("File is empty")
-			return
-		
-		pyxis_sucess(f"Sucessfully read file {file}")	
-		qry = pQuery(CLIENT, PYX_DATABASE, STORE, [file.split("/")[1], data], self.pub_key)
-		res = self.api.query(qry)
+		try:
+			file = input("file> ")
+			with open(os.path.join(file), "rb") as r:
+				data = r.read()
+			if len(data) <= 0:
+				pyxis_error("File is empty")
+				return
+			
+			pyxis_sucess(f"Sucessfully read file {file}")	
+			qry = pQuery(CLIENT, PYX_DATABASE, STORE, [file.split("/")[1], data], self.pub_key)
+			res = self.api.query(qry)
 
-		if res.cmd == SUCESS:
-			uid = res.params[0]
-			pyxis_sucess(f"Sucessfully stored data in id: {uid}")
-		elif res.cmd == FAILED:
-			pyxis_error(res.params[0])
-	
+			if res.cmd == SUCESS:
+				uid = res.params[0]
+				pyxis_sucess(f"Sucessfully stored data in id: {uid}")
+			elif res.cmd == FAILED:
+				pyxis_error(res.params[0])
+		except Exception as e:
+			pyxis_error(e)
+
 	def __fetch(self):
 		uid = "fb58e4a4-a552-42a8-917f-30c503548222"
 		qry = pQuery(CLIENT, PYX_DATABASE, FETCH, [uid], self.pub_key)
@@ -83,8 +86,8 @@ class Client:
 		self.__login()
 		# self.__signup()
 
-		# self.__store()
-		self.__fetch()
+		self.__store()
+		# self.__fetch()
 
 		self.__disconnect()
 

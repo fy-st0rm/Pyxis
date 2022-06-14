@@ -62,16 +62,21 @@ class Remote:
 		return data
 
 	def __store(self, qry):
-		pub_key = qry.auth
-		name = qry.params[0]
-		data = qry.params[1]
-		path = pyxis_get_storage_path(platform.system())
+		try:
+			pub_key = qry.auth
+			name = qry.params[0]
+			data = qry.params[1]
+			path = pyxis_get_storage_path(platform.system())
 
-		pyxis_sucess("Compressing and encrypting.")
-		with pyzipper.AESZipFile(path + name + ".zip", "w", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zf:
-			zf.setpassword(pub_key.encode())
-			zf.writestr(name, data)
-		pyxis_sucess("Sucessfully stored data.")
+			pyxis_sucess("Compressing and encrypting.")
+			with pyzipper.AESZipFile(path + name + ".zip", "w", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zf:
+				zf.setpassword(pub_key.encode())
+				zf.writestr(name, data)
+			pyxis_sucess("Sucessfully stored data.")
+
+			return pQuery(REMOTE, REM_HANDLER, STORED, [f"Sucessfully stored in remote."], None)
+		except Exception as e:
+			return pQuery(REMOTE, REM_HANDLER, STORED_FAILED, [f"Failed to store in remote.\nReason: {e}"], None)
 
 	def __fetch(self, qry):
 		uid = qry.params[0]
@@ -105,7 +110,8 @@ class Remote:
 		while active:
 			recv = pyxis_recv(self.api.server)
 			if recv.cmd == STORE:
-				self.__store(recv)
+				res = self.__store(recv)
+				pyxis_send(self.api.server, res)
 			elif recv.cmd == FETCH:
 				res = self.__fetch(recv)
 				pyxis_send(self.api.server, res)

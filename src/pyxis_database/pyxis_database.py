@@ -48,7 +48,8 @@ class Pyxis_Database:
 				chunk_no += 1
 
 			# Sending the data to remote handler to distribute throuhout the network
-			res = self.remote_handler.distribute_data(chunks, pub_key)
+			self.remote_handler.distribute_data(chunks, pub_key)
+			res = self.remote_handler.get_stored_result()
 			if res.cmd == FAILED:
 				raise Exception(res.params[0])
 			

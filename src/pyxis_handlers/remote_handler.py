@@ -9,6 +9,9 @@ class RemoteHandler:
 		self.remotes = {}
 		self.data_register = {}
 		self.fetched_data = {}
+
+		self.stored_recv = None
+		self.stored_recv_cnt = 0
 	
 	def get_remotes(self):
 		return (self.remotes, len(self.remotes))
@@ -67,16 +70,20 @@ class RemoteHandler:
 
 			i += 1
 			if i >= len(remotes): i = 0
-
-		return pQuery(REM_HANDLER, PYX_DATABASE, SUCESS, ["Sucessfully stored in all remotes."], None)
+	
+	def get_stored_result(self):
+		while self.stored_recv == None: pass
+		ret = self.stored_recv
+		self.stored_recv = None
+		return ret
 	
 	# Data receiver
 	def __gather_fetched(self, qry):
 		# Gatthers the fetched data incoming from remotes and saves in an interneal memory
-		uid = qry.params[0]
-		chunk = qry.params[1]
+		uid     = qry.params[0]
+		chunk   = qry.params[1]
 		pub_key = qry.params[2]
-		data = qry.params[3]
+		data    = qry.params[3]
 		self.fetched_data[uid].update({chunk: data})
 		self.fetched_data[uid].update({"key": pub_key})
 
@@ -123,11 +130,20 @@ class RemoteHandler:
 		if qry.cmd == REG_DATA:
 			self.__update_data_register(conn, qry.params)
 			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully added the data into remote register."], None)
+
 		elif qry.cmd == FETCHED:
 			self.__gather_fetched(qry)
 			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully added the data into fetched database."], None)
 		elif qry.cmd == FETCHED_FAILED:
 			self.__handle_fetched_failed(qry)
 			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully assigned the fetched failed command."], None)
+
+		elif qry.cmd == STORED or qry.cmd == STORED_FAILED:
+			self.stored_recv_cnt += 1
+
+			if self.stored_recv_cnt == len(self.remotes):
+				self.stored_recv_cnt = 0
+				self.stored_recv     = qry
+			return pQuery(qry.to, qry.by, SUCESS, [f"Sucessfully assigned `{qry.cmd}` the command."], None)
 		else:
 			return pQuery(qry.to, qry.by, FAILED, [f"Unknown `remote handler` command: {qry.cmd}"], None)
