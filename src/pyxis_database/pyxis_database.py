@@ -12,13 +12,16 @@ class Pyxis_Database:
 		self.remote_handler = None
 	
 	def parse_query(self, conn, qry):
-		if len(qry.params) != 2:
+		if qry.cmd == STORE and len(qry.params) != 2:
 			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"{qry.cmd} requires two arguments."], None)
+
+		if not self.client_handler.clients[conn]["auth"]:
+			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Client hasnt been authenticated yet. Run `LOGIN` or `SIGNUP` command to authenticate your connection."], None)
 
 		if qry.cmd == STORE:
 			return self.__store(qry)
 		elif qry.cmd == FETCH:
-			return self.__fetch(qry.params, qry.auth)
+			return self.__fetch(qry)
 		else:
 			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Unknown `Pyxis database` command {qry.cmd}."], None)
 
@@ -59,34 +62,33 @@ class Pyxis_Database:
 			pyxis_error("Failed to distribute files.")
 			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Failed to store data.\nReason: {e}"], None)
 
-	def __fetch(self, uid, pub_key):
+	def __fetch(self, qry):
 		try:
+			uid = qry.params[0]
 			if uid not in self.remote_handler.data_register:
 				raise Exception(f"{uid} is an invalid uid. Cannot found in database.")
+
+			# Asking for remote handler to fetch the datas
+			self.remote_handler.fetch_data(uid, qry.auth)
+			recv = self.remote_handler.retrive_fetched_data(uid, qry.auth)
+			
+			if recv.cmd == FAILED:
+				raise Exception(recv.params[0])
 
 			reg = self.remote_handler.data_register[uid]
 			file  = reg["file"]
 			padd  = int(reg["padd"])
 			total = int(reg["total"])
+			chunks = recv.params
 
-			final_data = b""
-			for i in range(total):
-				conn = random.choice(reg[str(i)])
-				print(conn)
-				pyxis_send(conn, pQuery([FETCH, (uid, str(i))], pub_key))
-				recv = pyxis_recv(conn)
-				print(recv.log, recv.data)
+			data = b""
+			for i in chunks:
+				data += i
+			data.strip(b" " * padd)
 
-				if not recv.sucess:
-					raise Exception(recv.log)
-
-				pyxis_sucess(recv.log)
-				final_data += recv.data
-
-			pyxis_sucess(f"Sucessfully retreived the file with id: {uid}")
-			return pQuery([DOWNLOAD, [file, final_data]], None)
+			return pQuery(PYX_DATABASE, qry.by, SUCESS, [file, data], None)
 
 		except Exception as e:
 			pyxis_error(f"Failed to fetch file.\nReason: {e}")
-			return pResult(f"Failed to fetch file.\nReason: {e}", None, False)
+			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Failed to fetch file.\nReason: {e}"], None)
 

@@ -8,6 +8,7 @@ class RemoteHandler:
 		self.database = database
 		self.remotes = {}
 		self.data_register = {}
+		self.fetched_data = {}
 	
 	def get_remotes(self):
 		return (self.remotes, len(self.remotes))
@@ -54,14 +55,6 @@ class RemoteHandler:
 			if conn not in chunk:
 				chunk.append(conn)
 	
-	# Query parser
-	def parse_query(self, conn, qry):
-		if qry.cmd == REG_DATA:
-			self.__update_data_register(conn, qry.params)
-			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully added the data into remote register."], None)
-		else:
-			return pQuery(qry.to, qry.by, FAILED, [f"Unknown `remote handler` command: {qry.cmd}"], None)
-	
 	# Data distributor
 	def distribute_data(self, chunks, pub_key):
 		remotes = list(self.remotes.keys())
@@ -76,4 +69,65 @@ class RemoteHandler:
 			if i >= len(remotes): i = 0
 
 		return pQuery(REM_HANDLER, PYX_DATABASE, SUCESS, ["Sucessfully stored in all remotes."], None)
+	
+	# Data receiver
+	def __gather_fetched(self, qry):
+		# Gatthers the fetched data incoming from remotes and saves in an interneal memory
+		uid = qry.params[0]
+		chunk = qry.params[1]
+		pub_key = qry.params[2]
+		data = qry.params[3]
+		self.fetched_data[uid].update({chunk: data})
+		self.fetched_data[uid].update({"key": pub_key})
 
+	def __handle_fetched_failed(self, qry):
+		uid = qry.params[0]
+		self.fetched_data[uid]["progress"] = False
+		self.fetched_data[uid]["msg"] = qry.params[1]
+
+	def fetch_data(self, uid, pub_key):
+		# Assigns the remotes to fetch for the required data
+		reg = self.data_register[uid]
+		total = int(reg["total"])
+
+		if uid not in self.fetched_data:
+			self.fetched_data.update({uid: {"progress": True, "msg": None, "key": None}})
+
+			for i in range(total):
+				conn = random.choice(reg[str(i)])
+				pyxis_send(conn, pQuery(REM_HANDLER, REMOTE, FETCH, [uid, str(i)], pub_key))
+	
+	def retrive_fetched_data(self, uid, pub_key):
+		# Asking for the data only if data is completely gathered
+		total = int(self.data_register[uid]["total"]) 
+
+		# Waiting for the data to be complete
+		while len(self.fetched_data[uid]) - 3 != total: 
+			if not self.fetched_data[uid]["progress"]:
+				return pQuery(PYX_DATABASE, REM_HANDLER, FAILED, [self.fetched_data[uid]["msg"]], None)
+
+		# Password checking
+		if pub_key != self.fetched_data[uid]["key"]:
+			return pQuery(PYX_DATABASE, REM_HANDLER, FAILED, [f"Wrong public key was used to fetch data of uid: {uid}"], None)
+
+		# Making chunks
+		chunks = []
+		for i in self.fetched_data[uid]:
+			if i not in ["progress", "msg", "key"]:
+				chunks.append(self.fetched_data[uid][i])
+
+		return pQuery(PYX_DATABASE, REM_HANDLER, SUCESS, chunks, None)
+	
+	# Query parser
+	def parse_query(self, conn, qry):
+		if qry.cmd == REG_DATA:
+			self.__update_data_register(conn, qry.params)
+			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully added the data into remote register."], None)
+		elif qry.cmd == FETCHED:
+			self.__gather_fetched(qry)
+			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully added the data into fetched database."], None)
+		elif qry.cmd == FETCHED_FAILED:
+			self.__handle_fetched_failed(qry)
+			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully assigned the fetched failed command."], None)
+		else:
+			return pQuery(qry.to, qry.by, FAILED, [f"Unknown `remote handler` command: {qry.cmd}"], None)

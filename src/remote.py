@@ -55,6 +55,12 @@ class Remote:
 			exit(1)
 	
 	# Storing and fetching
+	def __load_zip(self, path, file, pub_key):
+		with pyzipper.AESZipFile(path + file) as zf:
+			zf.setpassword(pub_key)
+			data = zf.read(file.strip(".zip"))
+		return data
+
 	def __store(self, qry):
 		pub_key = qry.auth
 		name = qry.params[0]
@@ -67,8 +73,31 @@ class Remote:
 			zf.writestr(name, data)
 		pyxis_sucess("Sucessfully stored data.")
 
-	def __fetch(self):
-		pass
+	def __fetch(self, qry):
+		uid = qry.params[0]
+		idx = qry.params[1]
+		pub_key = qry.auth.encode()
+
+		path = pyxis_get_storage_path(platform.system())
+		files = os.listdir(path)
+
+		# Looping through every file and matching the chunk and the uid 
+		for i in files:
+			f_info = i.split(":")
+			id     = f_info[0]
+			chunk  = f_info[1]
+
+			if uid == id and idx == chunk:
+				try:
+					data = self.__load_zip(path, i, pub_key)
+					res = pQuery(REMOTE, REM_HANDLER, FETCHED, [uid, idx, pub_key.decode(), data], None)
+					return res
+
+				except Exception as e:
+					res = pQuery(REMOTE, REM_HANDLER, FETCHED_FAILED, [uid, f"Error fetching from remote.\nReason: {e}"], None)
+					return res
+
+		return pQuery(REMOTE, REM_HANDLER, FETCHED_FAILED, [uid, f"File with uid: {uid} and chunk: {idx} is not located in this remote."], None)
 	
 	# Listener for remote handler
 	def __listen(self):
@@ -78,7 +107,8 @@ class Remote:
 			if recv.cmd == STORE:
 				self.__store(recv)
 			elif recv.cmd == FETCH:
-				print(recv)
+				res = self.__fetch(recv)
+				pyxis_send(self.api.server, res)
 	
 	def run(self):
 		try:

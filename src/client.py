@@ -63,13 +63,28 @@ class Client:
 		if res.cmd == SUCESS:
 			uid = res.params[0]
 			pyxis_sucess(f"Sucessfully stored data in id: {uid}")
+		elif res.cmd == FAILED:
+			pyxis_error(res.params[0])
+	
+	def __fetch(self):
+		uid = "fb58e4a4-a552-42a8-917f-30c503548222"
+		qry = pQuery(CLIENT, PYX_DATABASE, FETCH, [uid], self.pub_key)
+		res = self.api.query(qry)
+		if res.cmd == SUCESS:
+			pyxis_sucess(f"Sucessfully fetched file {res.params[0]}.")
+			with open(res.params[0], "wb") as w:
+				w.write(res.params[1])
+			pyxis_sucess(f"Done storing.")
+		else:
+			pyxis_error(res.params[0])
 
 	def run(self):
 		self.__connect()
 		self.__login()
 		# self.__signup()
 
-		self.__store()
+		# self.__store()
+		self.__fetch()
 
 		self.__disconnect()
 
