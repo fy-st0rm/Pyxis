@@ -22,6 +22,8 @@ class Pyxis_Database:
 			return self.__store(qry)
 		elif qry.cmd == FETCH:
 			return self.__fetch(qry)
+		elif qry.cmd == DELETE:
+			return self.__delete(qry)
 		else:
 			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Unknown `Pyxis database` command {qry.cmd}."], None)
 
@@ -49,10 +51,10 @@ class Pyxis_Database:
 
 			# Sending the data to remote handler to distribute throuhout the network
 			self.remote_handler.distribute_data(chunks, pub_key)
-			res = self.remote_handler.get_stored_result()
-			if res.cmd == FAILED:
-				raise Exception(res.params[0])
-			
+			recv = self.remote_handler.get_result(STORE, pub_key)
+			if recv.cmd == FAILED:
+				raise Exception (recv.params[0])
+
 			pyxis_warning("##DATA STORED INFO##")
 			pyxis_warning(f"Total chunks: {chunk_no}")
 			pyxis_warning(f"Total remotes: {remotes_no}")
@@ -92,4 +94,21 @@ class Pyxis_Database:
 		except Exception as e:
 			pyxis_error(f"Failed to fetch file.\nReason: {e}")
 			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Failed to fetch file.\nReason: {e}"], None)
+	
+	def __delete(self, qry):
+		try:
+			uid = qry.params[0]
+			if uid not in self.remote_handler.data_register:
+				raise Exception(f"{uid} is an invalid uid. Cannot found in database.")
+
+			self.remote_handler.delete_data(uid, qry.auth)
+			recv = self.remote_handler.get_result(DELETE, qry.auth)
+			if recv.cmd == FAILED:
+				raise Exception(recv.params[0])
+
+			return pQuery(PYX_DATABASE, qry.by, SUCESS, [f"Sucessfully deleted file with uid {uid}."], None)
+
+		except Exception as e:
+			pyxis_error(f"Failed to delete file.\nReason: {e}")
+			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Failed to delete file.\nReason: {e}"], None)
 

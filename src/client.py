@@ -33,7 +33,7 @@ class Client:
 		qry = pQuery(CLIENT, CLI_HANDLER, LOGIN, [CLIENT, self.name], self.pwd)
 		res = self.api.query(qry)
 		if res.cmd == SUCESS:
-			pyxis_sucess(res.params[0])
+			pyxis_sucess(f"Sucessfully logged in with pub_key: {res.params[0]}")
 			self.pub_key = res.params[0]
 		else:
 			pyxis_error(res.params[0])
@@ -70,7 +70,7 @@ class Client:
 			pyxis_error(e)
 
 	def __fetch(self):
-		uid = "fb58e4a4-a552-42a8-917f-30c503548222"
+		uid = "72205d51-4de7-494d-96b8-70562a1c27bc"
 		qry = pQuery(CLIENT, PYX_DATABASE, FETCH, [uid], self.pub_key)
 		res = self.api.query(qry)
 		if res.cmd == SUCESS:
@@ -80,6 +80,15 @@ class Client:
 			pyxis_sucess(f"Done storing.")
 		else:
 			pyxis_error(res.params[0])
+	
+	def __delete(self):
+		uid = "72205d51-4de7-494d-96b8-70562a1c27bc"
+		qry = pQuery(CLIENT, PYX_DATABASE, DELETE, [uid], self.pub_key)
+		res = self.api.query(qry)
+		if res.cmd == SUCESS:
+			pyxis_sucess(res.params[0])
+		else:
+			pyxis_error(res.params[0])
 
 	def run(self):
 		self.__connect()
@@ -87,6 +96,7 @@ class Client:
 		# self.__signup()
 
 		self.__store()
+		# self.__delete()
 		# self.__fetch()
 
 		self.__disconnect()
