@@ -89,6 +89,6 @@ def pyxis_get_storage_path(ops):
 		path = os.getenv('APPDATA')
 		if not os.path.exists(path + PYXIS_STORAGE_DIR):
 			os.mkdir(path + PYXIS_STORAGE_DIR)
-		path += PYXIS_STORAGE_DIR + "/"
+		path += PYXIS_STORAGE_DIR + "\"
 		return path
 
