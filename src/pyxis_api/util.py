@@ -87,8 +87,13 @@ def pyxis_get_storage_path(ops):
 			return path
 	elif ops == "Windows":
 		path = os.getenv('APPDATA')
+		path = path.replace("\\" , '/')
+		
 		if not os.path.exists(path + PYXIS_STORAGE_DIR):
 			os.mkdir(path + PYXIS_STORAGE_DIR)
-		path += PYXIS_STORAGE_DIR + "\"
+		path += PYXIS_STORAGE_DIR + "/"
 		return path
+		
 
+if __name__ == '__main__':
+	print(pyxis_get_storage_path("Windows"))
