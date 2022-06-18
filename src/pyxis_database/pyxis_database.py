@@ -19,21 +19,22 @@ class Pyxis_Database:
 			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Client hasnt been authenticated yet. Run `LOGIN` or `SIGNUP` command to authenticate your connection."], None)
 
 		if qry.cmd == STORE:
-			return self.__store(qry)
+			return self.__store(qry, str(uuid.uuid4()))
 		elif qry.cmd == FETCH:
 			return self.__fetch(qry)
 		elif qry.cmd == DELETE:
 			return self.__delete(qry)
+		elif qry.cmd == REPLACE:
+			return self.__replace(qry)
 		else:
 			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Unknown `Pyxis database` command {qry.cmd}."], None)
 
-	def __store(self, qry):
+	def __store(self, qry, uid):
 		try:
 			file = qry.params[0]
 			data = qry.params[1]
 			pub_key = qry.auth
 
-			uid = uuid.uuid4() 
 			remotes, remotes_no = self.remote_handler.get_remotes()
 
 			# Adding a padding to make it properly chunkable
@@ -111,4 +112,36 @@ class Pyxis_Database:
 		except Exception as e:
 			pyxis_error(f"Failed to delete file.\nReason: {e}")
 			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Failed to delete file.\nReason: {e}"], None)
+	
+	def __replace(self, qry):
+		try:
+			uid  = qry.params[0]
+			data = qry.params[1]
+
+			# Fetching the data to check if the key is correct
+			fetch_qry = pQuery(qry.by, qry.to, FETCH, [uid], qry.auth)
+			recv = self.__fetch(fetch_qry)
+			if recv.cmd == FAILED:
+				raise Exception(recv.params[0])
+			
+			file = recv.params[0]
+			self.remote_handler.fetched_data.pop(uid)
+
+			# Deleting the old file
+			del_qry = pQuery(qry.by, qry.to, DELETE, [uid], qry.auth)
+			recv = self.__delete(del_qry)
+			if recv.cmd == FAILED:
+				raise Exception(recv.params[0])
+
+			# Storing the new data
+			store_qry = pQuery(qry.by, qry.to, STORE, [file, data], qry.auth)
+			recv = self.__store(store_qry, uid)
+			if recv.cmd == FAILED:
+				raise Exception(recv.params[0])
+
+			return pQuery(PYX_DATABASE, qry.by, SUCESS, [f"Sucessfully replaced the content of the file with uid: {uid}."], None)
+
+		except Exception as e:
+			pyxis_error(f"Failed to replace file.\nReason: {e}.")
+			return pQuery(PYX_DATABASE, qry.by, FAILED, [f"Failed to replace file.\nReason: {e}."], None)
 

@@ -26,7 +26,6 @@ class Remote:
 			pyxis_error(res.params[0])
 			exit(1)
 
-
 	# Registration function
 	def __load_stored_data(self):
 		data = []
@@ -128,17 +127,17 @@ class Remote:
 			recv = pyxis_recv(self.api.server)
 			if recv.cmd == STORE:
 				res = self.__store(recv)
-				self.api.query(res)
 				self.__register_data()
-				
+				self.api.query(res)
+
 			elif recv.cmd == FETCH:
 				res = self.__fetch(recv)
 				self.api.query(res)
 
 			elif recv.cmd == DELETE:
 				res = self.__delete(recv)
-				self.api.query(res)
 				self.__register_data()
+				self.api.query(res)
 	
 	def run(self):
 		try:

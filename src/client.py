@@ -62,16 +62,16 @@ class Client:
 			res = self.api.query(qry)
 
 			if res.cmd == SUCESS:
-				uid = res.params[0]
-				pyxis_sucess(f"Sucessfully stored data in id: {uid}")
+				self.uid = res.params[0]
+				pyxis_sucess(f"Sucessfully stored data in id: {self.uid}")
 			elif res.cmd == FAILED:
 				pyxis_error(res.params[0])
 		except Exception as e:
 			pyxis_error(e)
 
 	def __fetch(self):
-		uid = "72205d51-4de7-494d-96b8-70562a1c27bc"
-		qry = pQuery(CLIENT, PYX_DATABASE, FETCH, [uid], self.pub_key)
+		uid = "befc0fe8-0d58-4656-960d-17b5084ffb16"
+		qry = pQuery(CLIENT, PYX_DATABASE, FETCH, [self.uid], self.pub_key)
 		res = self.api.query(qry)
 		if res.cmd == SUCESS:
 			pyxis_sucess(f"Sucessfully fetched file {res.params[0]}.")
@@ -83,7 +83,16 @@ class Client:
 	
 	def __delete(self):
 		uid = "72205d51-4de7-494d-96b8-70562a1c27bc"
-		qry = pQuery(CLIENT, PYX_DATABASE, DELETE, [uid], self.pub_key)
+		qry = pQuery(CLIENT, PYX_DATABASE, DELETE, [self.uid], self.pub_key)
+		res = self.api.query(qry)
+		if res.cmd == SUCESS:
+			pyxis_sucess(res.params[0])
+		else:
+			pyxis_error(res.params[0])
+	
+	def __replace(self):
+		uid = "befc0fe8-0d58-4656-960d-17b5084ffb16"
+		qry = pQuery(CLIENT, PYX_DATABASE, REPLACE, [self.uid, b"Hello everyone"], self.pub_key)
 		res = self.api.query(qry)
 		if res.cmd == SUCESS:
 			pyxis_sucess(res.params[0])
@@ -96,8 +105,17 @@ class Client:
 		# self.__signup()
 
 		self.__store()
-		# self.__delete()
-		# self.__fetch()
+		time.sleep(1)
+		self.__fetch()
+		time.sleep(1)
+		self.__replace()
+		time.sleep(1)
+		self.__fetch()
+		time.sleep(1)
+		self.__delete()
+		time.sleep(1)
+		self.__fetch()
+		time.sleep(1)
 
 		self.__disconnect()
 
