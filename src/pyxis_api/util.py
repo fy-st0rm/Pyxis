@@ -86,8 +86,14 @@ def pyxis_get_storage_path(ops):
 			path += PYXIS_STORAGE_DIR + "/"
 			return path
 	elif ops == "Windows":
-		raise NotImplemented("Windows path system has not been implemented yet")
-	else:
-		raise NotImplemented(f"Not implemented for os `{ops}`")
+		path = os.getenv('APPDATA')
+		path = path.replace("\\" , '/')
+		
+		if not os.path.exists(path + PYXIS_STORAGE_DIR):
+			os.mkdir(path + PYXIS_STORAGE_DIR)
+		path += PYXIS_STORAGE_DIR + "/"
+		return path
+		
 
-
+if __name__ == '__main__':
+	print(pyxis_get_storage_path("Windows"))
