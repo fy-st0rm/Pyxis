@@ -63,5 +63,5 @@ class Server:
 				threading.Thread(target = self.__handler, args = (data, addr)).start()
 
 if __name__ == "__main__":
-	sv = Server("192.168.1.68", 5050)
+	sv = Server(socket.gethostbyname(socket.gethostname()), 6969)
 	sv.run()

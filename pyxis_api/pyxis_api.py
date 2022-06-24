@@ -5,7 +5,7 @@ from pyxis_types    import *
 
 class Pyxis_API:
 	def __init__(self):
-		self.sv_addr = ("192.168.1.68", 5050)
+		self.sv_addr = ("165.140.240.246", 40976)
 	
 		# Flags
 		self.__listener_enabled = False
@@ -21,10 +21,10 @@ class Pyxis_API:
 		self.peers = []
 
 		# Socket stuff
+		self.addr = self.generate_addr()
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-		self.sock.bind(self.get_addr())
+		self.sock.bind(self.addr)
 		
 		self.__connect_to_server()
 	
@@ -36,7 +36,7 @@ class Pyxis_API:
 		exit()
 	
 	# Socket related functions
-	def get_addr(self):
+	def generate_addr(self):
 		ip = socket.gethostbyname(socket.gethostname())
 		port = random.randint(5000, 5999) 
 		return ip, port
@@ -151,8 +151,9 @@ class Pyxis_API:
 
 		# If app id is valid sending the query to the peers
 		qry.pid = pid2
+		print(self.peers)
 		for peer in self.peers:
-			if peer != self.get_addr(): pyxis_send(self.sock, peer, qry)
+			if peer != self.addr: pyxis_send(self.sock, peer, qry)
 
 		return pid2
 
