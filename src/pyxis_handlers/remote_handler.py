@@ -12,6 +12,9 @@ class RemoteHandler:
 
 		self.fetched_data = {}
 		self.results = {}
+
+		self.queues = []
+		self.reply = False 
 	
 	def get_remotes(self):
 		return (self.remotes, len(self.remotes))
@@ -27,6 +30,19 @@ class RemoteHandler:
 
 	def disconnect(self):
 		pyxis_warning("IMPLEMENT DISCONNECT FUNCTION IN REMOTE HANDLER")
+	
+	# Queue system
+	def __add_queue(self, conn, qry):
+		self.queues.append((conn, qry))
+	
+	def queue_queries(self):
+		temp = self.queues.copy()
+		for i in temp:
+			conn, qry = i
+			pyxis_send(conn, qry)
+			self.queues.remove(i)
+			while not self.reply: pass
+			self.reply = False
 
 	# Data register handlers
 	def __add_new_register(self, id, padd, total, file):
@@ -98,7 +114,7 @@ class RemoteHandler:
 		i = 0
 		for j in chunks:
 			qry = pQuery(REM_HANDLER, REMOTE, STORE, [j, chunks[j]], pub_key)
-			pyxis_send(remotes[i], qry)
+			self.__add_queue(remotes[i], qry)
 
 			i += 1
 			if i >= len(remotes): i = 0
@@ -128,7 +144,8 @@ class RemoteHandler:
 
 			for i in range(total):
 				conn = random.choice(reg[str(i)])
-				pyxis_send(conn, pQuery(REM_HANDLER, REMOTE, FETCH, [uid, str(i)], pub_key))
+				qry = pQuery(REM_HANDLER, REMOTE, FETCH, [uid, str(i)], pub_key)
+				self.__add_queue(conn, qry)
 	
 	def retrive_fetched_data(self, uid, pub_key):
 		# Asking for the data only if data is completely gathered
@@ -169,13 +186,14 @@ class RemoteHandler:
 			if i not in ["padd", "total", "file"]:
 				conns = reg[i]
 				for conn in conns:
-					pyxis_send(conn, pQuery(REM_HANDLER, REMOTE, DELETE, [uid], pub_key))
+					qry = pQuery(REM_HANDLER, REMOTE, DELETE, [uid], pub_key)
+					self.__add_queue(conn, qry)
 	
 	# Query parser
 	def parse_query(self, conn, qry):
 		if qry.cmd == REG_DATA:
 			self.__update_data_register(conn, qry.params)
-			return pQuery(qry.to, qry.by, SUCESS, ["Sucessfully added the data into remote register."], None)
+			return pQuery(qry.to, qry.by, REG_SUCESS, ["Sucessfully added the data into remote register."], None)
 
 		elif qry.cmd == FETCHED:
 			self.__gather_fetched(qry)
@@ -188,6 +206,10 @@ class RemoteHandler:
 		elif qry.cmd == SUCESS or qry.cmd == FAILED:
 			self.__handle_result(qry)
 			return pQuery(qry.to, qry.by, SUCESS, [f"Sucessfully assigned `{qry.cmd}` the command."], None)
+
+		elif qry.cmd == REPLY:
+			self.reply = True
+			return pQuery(qry.to, qry.by, SUCESS, [f"Replied."], None)
 
 		else:
 			return pQuery(qry.to, qry.by, FAILED, [f"Unknown `remote handler` command: {qry.cmd}"], None)

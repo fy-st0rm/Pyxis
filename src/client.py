@@ -6,9 +6,8 @@ from pyxis_api.pyxis_api   import *
 class Client:
 	def __init__(self):
 		self.api = Pyxis_API()
-
-		self.name = "slok"
-		self.pwd = "password"
+		self.name = None
+		self.pwd = None
 		self.pub_key = None
 	
 	# Connect and Disconnect functions with pyxis server
@@ -30,6 +29,8 @@ class Client:
 			exit(1)
 
 	def __login(self):
+		self.name = input("Username: ")
+		self.pwd  = input("Password: ")
 		qry = pQuery(CLIENT, CLI_HANDLER, LOGIN, [CLIENT, self.name], self.pwd)
 		res = self.api.query(qry)
 		if res.cmd == SUCESS:
@@ -37,6 +38,7 @@ class Client:
 			self.pub_key = res.params[0]
 		else:
 			pyxis_error(res.params[0])
+			raise Exception(res.params[0])
 	
 	def __signup(self):
 		qry = pQuery(CLIENT, CLI_HANDLER, SIGNUP, [CLIENT, self.name], self.pwd)
@@ -100,22 +102,32 @@ class Client:
 			pyxis_error(res.params[0])
 
 	def run(self):
-		self.__connect()
-		self.__login()
-		# self.__signup()
+		a = 2
+		try:
+			self.__connect()
+			self.__login()
+			# self.__signup()
 
-		self.__store()
-		time.sleep(1)
-		self.__fetch()
-		time.sleep(1)
-		self.__replace()
-		time.sleep(1)
-		self.__fetch()
-		time.sleep(1)
-		self.__delete()
-		time.sleep(1)
-		self.__fetch()
-		time.sleep(1)
+			pyxis_warning("testing: STORE")
+			self.__store()
+			time.sleep(a)
+			pyxis_warning("testing: FETCH")
+			self.__fetch()
+			time.sleep(a)
+			pyxis_warning("testing: REPLACE")
+			self.__replace()
+			time.sleep(a)
+			pyxis_warning("testing: FETCH")
+			self.__fetch()
+			time.sleep(a)
+			pyxis_warning("testing: DELETE")
+			self.__delete()
+			time.sleep(a)
+			pyxis_warning("testing: FETCH")
+			self.__fetch()
+			time.sleep(a)
+		except Exception as e:
+			pyxis_error(f"Disconnected due to: {e}")
 
 		self.__disconnect()
 

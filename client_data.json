@@ -2,5 +2,9 @@
     "slok": {
         "salt": "ab902f89-e7f8-412f-a365-293cb0e69721",
         "pwd": "a4b6db5ef880dab21705f717094846e2339c0a30bfbe0e115fabecc53f7cc97a0ac5850620b3e5aa01eca83157ac8fce5d17c371876ce0c4208c9e37e5ab29ee"
+    },
+    "st0rm": {
+        "salt": "b8cb494a-a394-4d46-b788-fb08b7dbe4e0",
+        "pwd": "63d086a388f75bc13b290ab785a10c08766e1728e3d62459d7e9f6632412463376000b2be0d6de298ee7c3482dfafdbe23cdb410aed7ad93568e186cb5067e32"
     }
 }

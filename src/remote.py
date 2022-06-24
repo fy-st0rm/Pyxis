@@ -6,6 +6,9 @@ from pyxis_api.pyxis_api   import *
 class Remote:
 	def __init__(self):
 		self.api = Pyxis_API()
+		self.active = True
+		self.queries = []
+		self.results = []
 	
 	# Connect and Disconnect functions with pyxis server
 	def __connect(self):
@@ -46,12 +49,7 @@ class Remote:
 	def __register_data(self):
 		data = self.__load_stored_data()
 		qry  = pQuery(REMOTE, REM_HANDLER, REG_DATA, data, None) 
-		res = self.api.query(qry)
-		if res.cmd == SUCESS:
-			pyxis_sucess(res.params[0])
-		else:
-			pyxis_error(res.params[0])
-			exit(1)
+		pyxis_send(self.api.server, qry)
 	
 	# Storing and fetching
 	def __load_zip(self, path, file, pub_key):
@@ -75,7 +73,7 @@ class Remote:
 
 			return pQuery(REMOTE, REM_HANDLER, SUCESS, [STORE, f"Sucessfully stored in remote."], qry.auth)
 		except Exception as e:
-			return pQuery(REMOTE, REM_HANDLER, SUCESS, [STORE, f"Failed to store in remote.\nReason: {e}"], qry.auth)
+			return pQuery(REMOTE, REM_HANDLER, FAILED, [STORE, f"Failed to store in remote.\nReason: {e}"], qry.auth)
 
 	def __fetch(self, qry):
 		uid = qry.params[0]
@@ -121,31 +119,72 @@ class Remote:
 					return pQuery(REMOTE, REM_HANDLER, FAILED, [DELETE, f"Failed to delete file with uid {uid}\nReason: {e}"], pub_key)
 	
 	# Listener for remote handler
+	def __check_for_register(self):
+		while REG_SUCESS not in self.results: pass 
+		self.results.pop()
+
+	def __handle_store(self, qry):
+		res = self.__store(qry)
+		pyxis_sucess("STORE: Registrating data")
+		self.__register_data()
+		self.__check_for_register()
+		pyxis_sucess("STORE: Sending result")
+		pyxis_send(self.api.server, res)
+	
+	def __handle_fetch(self, qry):
+		res = self.__fetch(qry)
+		pyxis_sucess("FETCH: Sending result")
+		pyxis_send(self.api.server, res)
+
+	def __handle_delete(self, qry):
+		res = self.__delete(qry)
+		pyxis_sucess("DELETE: Registrating data")
+		self.__register_data()
+		self.__check_for_register()
+		pyxis_sucess("DELETE: Sending result")
+		pyxis_send(self.api.server, res)
+	
+	def __handle_process(self):
+		while self.active:
+			if len(self.queries) > 0:
+				recv = self.queries.pop()
+				if recv.cmd == STORE:
+					self.__handle_store(recv)
+
+				elif recv.cmd == FETCH:
+					self.__handle_fetch(recv)
+
+				elif recv.cmd == DELETE:
+					self.__handle_delete(recv)
+
 	def __listen(self):
-		active = True
-		while active:
+		thread = threading.Thread(target = self.__handle_process)
+		thread.start()
+
+		while self.active:
 			recv = pyxis_recv(self.api.server)
-			if recv.cmd == STORE:
-				res = self.__store(recv)
-				self.__register_data()
-				self.api.query(res)
-
-			elif recv.cmd == FETCH:
-				res = self.__fetch(recv)
-				self.api.query(res)
-
-			elif recv.cmd == DELETE:
-				res = self.__delete(recv)
-				self.__register_data()
-				self.api.query(res)
+			pyxis_send(self.api.server, pQuery(REMOTE, REM_HANDLER, REPLY, [f"Query has been reached."], None))
+			if recv.cmd == REG_SUCESS:
+				self.results.append(REG_SUCESS)
+			else:
+				self.queries.append(recv)
 	
 	def run(self):
 		try:
 			self.__connect()
-			self.__register_data()
+
+			data = self.__load_stored_data()
+			qry  = pQuery(REMOTE, REM_HANDLER, REG_DATA, data, None) 
+			recv = self.api.query(qry)
+			if recv.cmd == REG_SUCESS:
+				pyxis_sucess(recv.params[0])
+			else:
+				pyxis_error(recv.params[0])
+
 			self.__listen()
-		except:
-			pass
+		except Exception as e:
+			self.active = False
+			pyxis_error(f"Disconnected due to {e}.")
 
 		self.__disconnect()
 

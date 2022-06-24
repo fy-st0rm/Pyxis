@@ -16,6 +16,8 @@ DISCONNECT = "DISCONNECT"
 # Flag based commands
 SUCESS = "SUCESS"
 FAILED = "FAILED"
+REG_SUCESS = "REG_SUCESS"
+REPLY = "REPLY"
 
 # User based commands
 LOGIN  = "LOGIN"

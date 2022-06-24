@@ -56,6 +56,10 @@ class Server:
 
 		else:
 			pyxis_send(conn, pQuery(qry.to, qry.by, FAILED, [f"Unknown type `{query.cmd}`. `CONNECT` has only two types `REMOTE/CLIENT`."], None))
+	
+	def __handle_queue(self):
+		while self.__running:
+			self.remote_handler.queue_queries()
 
 	def __handle_connection(self, conn, addr):
 		pyxis_sucess(f"{addr} connected.")
@@ -89,11 +93,15 @@ class Server:
 	def run(self):
 		pyxis_sucess(f"Server has been started on {IP}.")
 		self.server.listen()
+
+		queue_thread = threading.Thread(target = self.__handle_queue)
+		queue_thread.start()
+
 		while self.__running:
 			try:
 				conn, addr = self.server.accept()
 
-				thread = threading.Thread(target=self.__handle_connection, args=(conn, addr))
+				thread = threading.Thread(target = self.__handle_connection, args=(conn, addr))
 				thread.start()
 			except KeyboardInterrupt:
 				self.__running = False

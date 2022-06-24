@@ -40,7 +40,7 @@ def pyxis_send(conn, data):
 
 	# If the data is below the buffer capacity
 	if len(new_data) <= BUFF_CAP:
-		info = pQuery(None, None, META, [f"{len(new_data)}:{0}"], None)
+		info = pQuery(data.by, data.to, META, [f"{len(new_data)}:{0}"], None)
 		__pyxis_send(conn, pickle.dumps(info))
 		__pyxis_send(conn, new_data)
 		return
@@ -50,7 +50,7 @@ def pyxis_send(conn, data):
 	new_data += b" " * padd
 
 	# Sending the packet information
-	info = pQuery(None, None, META, [f"{len(new_data)}:{padd}"], None)
+	info = pQuery(data.by, data.to, META, [f"{len(new_data)}:{padd}"], None)
 	__pyxis_send(conn, pickle.dumps(info))
 
 	for i in range(0, len(new_data), BUFF_CAP):
@@ -85,10 +85,10 @@ def pyxis_get_storage_path(ops):
 				os.mkdir(path + PYXIS_STORAGE_DIR)
 			path += PYXIS_STORAGE_DIR + "/"
 			return path
+
 	elif ops == "Windows":
 		path = os.getenv('APPDATA')
 		path = path.replace("\\" , '/')
-		
 		if not os.path.exists(path + PYXIS_STORAGE_DIR):
 			os.mkdir(path + PYXIS_STORAGE_DIR)
 		path += PYXIS_STORAGE_DIR + "/"
