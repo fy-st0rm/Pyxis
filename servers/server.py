@@ -4,20 +4,20 @@ sys.path.append(os.path.abspath("../pyxis_api"))
 
 from pyxis_api import *
 from cli_handler import *
-from app_id_handler import *
+
 
 class Server:
 	def __init__(self, ip, port):
 		self.ip = ip 
 		self.port = port 
+		self.sv_addr = (self.ip, self.port)
 		self.__create_server()
 
-		self.address = []
+		self.address = {}
 		self.running = True
 
 		# Handlers
-		self.cli_handler = Cli_Handler()
-		self.app_id_handler = App_ID_Handler()	
+		self.cli_handler = Cli_Handler(self)
 
 	def __create_server(self):
 		try:
@@ -29,36 +29,45 @@ class Server:
 			exit()
 
 	def __distribute_addr(self):
-		for addr in self.address:
-			qry = pQuery(SERVER, UNKNOWN, PEERS_ADDR, self.address, None, uuid.uuid4())
-			pyxis_send(self.server, addr, qry)
+		for user in self.address:
+			addr = self.address[user]
+			qry = pQuery(self.sv_addr, addr, PEERS_ADDR, self.address, uuid.uuid4())
+			pyxis_send(self.server, qry)
 
 	# Server query handler
 	def __handler(self, data, addr):
-		result = self.app_id_handler.check_app_id(data.app_id)
+		if data.cmd == SIGNUP or data.cmd == LOGIN:
+			result = self.cli_handler.parse_query(data, addr)
+		else:
+			result = pQuery(self.sv_addr, addr, FAILED, [f"Unknown command `{data.cmd}`."], None)
 		
-		if result.cmd == SUCESS:
-			if data.cmd == SIGNUP or data.cmd == LOGIN:
-				result = self.cli_handler.parse_query(data)
-		
+		result.by  = self.sv_addr
+		result.to  = data.by
 		result.pid = data.pid
-		pyxis_send(self.server, addr, result)
+		pyxis_send(self.server, result)
 
 	def run(self):
 		while self.running:
 			data, addr = pyxis_recv(self.server)
 
-			# When we first connect
 			if data.cmd == CONNECT:
-				pyxis_sucess(f"{addr} connected.")
-				if addr not in self.address: self.address.append(addr)
-				self.__distribute_addr()
+				if data.params[0] in self.address:
+					pyxis_sucess(f"{addr} connected.")
+					qry = pQuery(self.sv_addr, addr, SUCESS, [f"Sucessfully connected to server."], data.pid)
+					pyxis_send(self.server, qry)
+					self.__distribute_addr()
+				else:
+					pyxis_error(f"{addr} failed to connect.")
+					qry = pQuery(self.sv_addr, addr, FAILED, [f"Cannot connect to server without authenticating. `Login` or `Signup` for authentication."], data.pid)
+					pyxis_send(self.server, qry)
+
 
 			# When client disconnects
 			elif data.cmd == DISCONNECT:
-				if addr in self.address: self.address.remove(addr)
+				if data.params[0] in self.address: self.address.pop(data.params[0])
 				self.__distribute_addr()
 				pyxis_error(f"{addr} disconnected.")
+
 			else:
 				threading.Thread(target = self.__handler, args = (data, addr)).start()
 

@@ -34,12 +34,13 @@ def __pyxis_recv(sock):
 	time.sleep(DELAY)
 	return sock.recvfrom(BUFF_CAP)
 
-def pyxis_send(sock, addr, data):
+def pyxis_send(sock, data):
+	addr = data.to # Address of receiver
 	new_data = pickle.dumps(data)
 
 	# If the data is below the buffer capacity
 	if len(new_data) <= BUFF_CAP:
-		info = pQuery(data.by, data.to, "META", [f"{len(new_data)}:{0}"], None, data.pid)
+		info = pQuery(data.by, data.to, "META", [f"{len(new_data)}:{0}"], data.pid)
 		__pyxis_send(sock, addr, pickle.dumps(info))
 		__pyxis_send(sock, addr, new_data)
 		return
@@ -49,7 +50,7 @@ def pyxis_send(sock, addr, data):
 	new_data += b" " * padd
 
 	# Sending the packet information
-	info = pQuery(data.by, data.to, "META", [f"{len(new_data)}:{padd}"], None, data.pid)
+	info = pQuery(data.by, data.to, "META", [f"{len(new_data)}:{padd}"], data.pid)
 	__pyxis_send(sock, addr, pickle.dumps(info))
 
 	for i in range(0, len(new_data), BUFF_CAP):
@@ -62,13 +63,13 @@ def pyxis_recv(sock):
 	info = info.params[0].split(":")
 
 	sz, padd = int(info[0]), int(info[1])
-	
+
 	# Collecting the data and combining it
 	data = b""
 	while len(data) < sz:
 		chunk, addr = __pyxis_recv(sock)
 		data += chunk
-	
+
 	# Remove the excess padding
 	data.strip(b" " * padd)
 	return pickle.loads(data), addr

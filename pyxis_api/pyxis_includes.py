@@ -8,3 +8,5 @@ import json
 import random
 import uuid
 import hashlib
+import platform
+import pyzipper

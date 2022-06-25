@@ -1,24 +1,28 @@
 from pyxis_includes import *
 from pyxis_utils    import *
 from pyxis_types    import *
+from pyxis_process_handler import *
+from pyxis_database import *
 
 
 class Pyxis_API:
 	def __init__(self):
-		self.sv_addr = ("165.140.240.246", 40976)
+		self.sv_addr = ("192.168.1.68", 6969)
 	
 		# Flags
-		self.__listener_enabled = False
 		self.running = True
 
 		# List of cmds handled by api
-		self.cmds = [PEERS_ADDR]
+		self.cmds = [PEERS_ADDR, STORE, FETCH]
 
-		# Process dictionary
-		self.process = {}
+		# Process handler 
+		self.process_handler = ProcessHandler()
+
+		# Database handler
+		self.pyxis_database = PyxisDatabase()
 
 		# Peers address
-		self.peers = []
+		self.peers = {}
 
 		# Socket stuff
 		self.addr = self.generate_addr()
@@ -28,11 +32,16 @@ class Pyxis_API:
 		
 		self.__connect_to_server()
 	
-	def close(self):
-		qry = pQuery(UNKNOWN, SERVER, DISCONNECT, [], None, None)
-		pyxis_send(self.sock, self.sv_addr, qry)
+	def get_peer_addr(self, peer_uid):
+		if peer_uid in self.peers: return self.peers[peer_uid]
+		return f"Peer with uid: {peer_uid} doesnt exists."
+	
+	def close(self, usr_id):
+		qry = pQuery(self.addr, self.sv_addr, DISCONNECT, [usr_id], None)
+		pyxis_send(self.sock, qry)
 
 		self.running = False
+		self.sock.close()
 		exit()
 	
 	# Socket related functions
@@ -42,118 +51,188 @@ class Pyxis_API:
 		return ip, port
 
 	def __connect_to_server(self):
-		qry = pQuery(UNKNOWN, SERVER, CONNECT, [], None, uuid.uuid4())
-		pyxis_send(self.sock, self.sv_addr, qry)
-	
-	# Process handlers
-	def create_new_process(self, pid, peers):
-		if pid in self.process: return
-		self.process.update({ 
-			pid: {
-				"completed": False, 
-				"result"   : None, 
-				"log"      : "",
-				"values"   : [],
-				"peers"    : peers
-				} 
-			})
-	
-	def __handle_process(self, value):
-		pro_reg = self.process[value.pid]
-		pro_reg["log"] = value.params[0]
-		pro_reg["result"] = value.cmd
+		qry = pQuery(self.addr, self.sv_addr, b"0", [], uuid.uuid4())
+		pyxis_send(self.sock, qry)
 
-		value.params.pop(0)
-		pro_reg["values"].append(value)
-	
-	def get_process_result(self, pid):
-		pro_reg = self.process[pid]
-
-		while not pro_reg["completed"]:
-			if len(pro_reg["values"]) == pro_reg["peers"]: pro_reg["completed"] = True
-			if pro_reg["result"] == FAILED: pro_reg["completed"] = True
-
-		self.process.pop(pid)
-		return pro_reg
-	
 	# Listener
-	def __handle_cmds(self, qry):
+	def __handle_cmds(self, qry, addr):
 		if qry.cmd == PEERS_ADDR:
 			self.peers = qry.params
+
+		elif qry.cmd == STORE:
+			res = self.__store_package(qry.params[0], qry.params[1])
+			res.by = qry.to; res.to = qry.by; res.pid = qry.pid
+			pyxis_send(self.sock, res)
+
+		elif qry.cmd == FETCH:
+			res = self.__fetch_package(qry.params[0], qry.params[1])
+			res.by = qry.to; res.to = qry.by; res.pid = qry.pid
+			pyxis_send(self.sock, res)
 
 	def __listener(self, listener):
 		while self.running:
 			recv, addr = pyxis_recv(self.sock)
 
-			if recv.pid in self.process:
-				self.__handle_process(recv)
-
-			elif recv.cmd in self.cmds:
-				self.__handle_cmds(recv)
-
-			else:
-				listener(recv)
+			if   recv.pid in self.process_handler.process: self.process_handler.handle_process(recv)
+			elif recv.cmd in self.cmds:					   self.__handle_cmds(recv, addr)
+			else:					       				   listener(recv, addr)
 
 	def set_listener(self, listener):
-		if not self.__listener_enabled: self.__listener_enabled = True
 		threading.Thread(target = self.__listener, args = (listener, )).start()
 	
 	# Authenticate functions
-	def login(self, username, pwd, app_id):
-		if not self.__listener_enabled: 
-			pyxis_error(f"Handle the listener before quering the data.")
-			self.close()
-
+	def login(self, username, pwd):
 		# Creating new process with the peer of `1`
 		pid = uuid.uuid4()
-		self.create_new_process(pid, 1)
+		self.process_handler.create_new_process(pid, 1)
 
 		# Sending query to the server
-		qry = pQuery(UNKNOWN, SERVER, LOGIN, [username, pwd], app_id, pid)
-		pyxis_send(self.sock, self.sv_addr, qry)
+		qry = pQuery(self.addr, self.sv_addr, LOGIN, [username, pwd], pid)
+		pyxis_send(self.sock, qry)
 
 		# Sending back the result
-		result = self.get_process_result(pid)
+		result = self.process_handler.get_process_result(pid)
 		return result
 
-	def signup(self, username, pwd, app_id):
-		if not self.__listener_enabled: 
-			pyxis_error(f"Handle the listener before quering the data.")
-			self.close()
-
+	def signup(self, username, pwd):
 		# Creating new process with the peer of `1`
 		pid = uuid.uuid4()
-		self.create_new_process(pid, 1)
+		self.process_handler.create_new_process(pid, 1)
 
 		# Sending query to the server
-		qry = pQuery(UNKNOWN, SERVER, SIGNUP, [username, pwd], app_id, pid)
-		pyxis_send(self.sock, self.sv_addr, qry)
+		qry = pQuery(self.addr, self.sv_addr, SIGNUP, [username, pwd], pid)
+		pyxis_send(self.sock, qry)
 		
 		# Sending back the result
-		result = self.get_process_result(pid)
+		result = self.process_handler.get_process_result(pid)
 		return result
 	
 	# Query Function
 	def query(self, qry):
-		pid1 = uuid.uuid4()
-		pid2 = uuid.uuid4()
+		pid = uuid.uuid4()
+		qry.pid = pid
 
-		self.create_new_process(pid1, 1) # Process for server
-		self.create_new_process(pid2, len(self.peers) - 1) # Process between peers
+		self.process_handler.create_new_process(pid, 1)
+		pyxis_send(self.sock, qry)
+		return pid
+	
+	# Database queries
+	def __load_zip(self, path, file, pub_key):
+		with pyzipper.AESZipFile(path + file) as zf:
+			zf.setpassword(pub_key.encode())
+			data = zf.read(file.strip(".zip"))
+		return data
 
-		# Sending the server the qry to check the app id
-		qry.pid = pid1
-		pyxis_send(self.sock, self.sv_addr, qry)
-		result = self.get_process_result(qry.pid)
-		if result["result"] == FAILED: 
-			pyxis_error(result["log"])
-			self.close()
+	def __store_package(self, package, key):
+		pyxis_sucess("Storing file.")
+		path = pyxis_get_storage_path(platform.system())
 
-		# If app id is valid sending the query to the peers
-		qry.pid = pid2
-		print(self.peers)
-		for peer in self.peers:
-			if peer != self.addr: pyxis_send(self.sock, peer, qry)
+		file_name = f"{package.uid}:{package.fname}:{package.padd}:{package.offset}:{package.total}"
+		with pyzipper.AESZipFile(path + file_name + ".zip", "w", compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as zf:
+			zf.setpassword(key.encode())
+			zf.writestr(file_name, package.data)
+		pyxis_sucess("Sucessfully stored file.")
+		return pQuery(None, None, SUCESS, [f"Sucessfully stored data.", package.uid, package.total], None)
+	
+	def __fetch_package(self, file_id, pub_key):
+		path = pyxis_get_storage_path(platform.system())
+		files = os.listdir(path)
+		
+		pyxis_sucess(f"Fetching file.")
+		packages = []
+		for file in files:
+			f_info = file.split(":")
+			fid    = f_info[0]
+			fname  = f_info[1]
+			padd   = f_info[2]
+			offset = f_info[3]
+			total  = f_info[4].strip(".zip")
 
-		return pid2
+			if file_id == fid:
+				try:
+					data = self.__load_zip(path, file, pub_key)
+					packages.append(pPackage(fid, fname, padd, offset, total, data))
+				except Exception as e:
+					return pQuery(None, None, FAILED, [f"Failed to fetch file because {e}"], None)
+		
+		if packages:
+			pyxis_sucess(f"Sucessfully fetched")
+			return pQuery(None, None, SUCESS, [f"Sucessfully fetched file `{file_id}`.", packages], None)
+		else:
+			pyxis_warning(f"File not here! SKIP")
+			return pQuery(None, None, SKIP, [f"Couldnt found file: {file_id}"], None)
+	
+	def store(self, fname, data, pub_key):
+		packages = self.pyxis_database.make_packages(fname, data)
 
+		pyxis_sucess("Sending packages")
+		address = list(self.peers.values())
+		address.remove(self.addr)
+		peer = 0
+
+		pyxis_sucess(f"Storing into {len(packages)} chunks")
+
+		i = 0
+		res = None
+		for package in packages:
+			pid = uuid.uuid4()
+			self.process_handler.create_new_process(pid, 1)
+			
+			qry = pQuery(self.addr, address[peer], STORE, [package, pub_key], pid)
+			pyxis_send(self.sock, qry)
+
+			res = self.process_handler.get_process_result(pid)
+			if res.result == FAILED:
+				break
+
+			peer += 1
+			if peer >= len(address): peer = 0
+
+		result = res
+		return result
+
+	def fetch(self, file_id, total_chunks, pub_key):
+		chunks = {}
+		complete = False
+
+		address = list(self.peers.values())
+		address.remove(self.addr)
+		peer = 0
+		
+		for i in range(total_chunks):
+			pid = uuid.uuid4()
+			self.process_handler.create_new_process(pid, 1)
+
+			qry = pQuery(self.addr, address[peer], FETCH, [file_id, pub_key], pid)
+			if address[peer] != self.addr: pyxis_send(self.sock, qry)
+			peer += 1
+			if peer >= len(address): peer = 0
+
+			res = self.process_handler.get_process_result(pid)
+			if res.result == FAILED:
+				return res
+			elif res.result == SKIP:
+				continue
+			
+			# Values contains reply queries with fectched packages
+			packages = res.values[0].params[0]
+			fname = packages[0].fname
+			padd  = packages[0].padd
+
+			for package in packages:
+				if package.offset not in chunks: chunks.update({package.offset: package.data})
+				if len(chunks) >= total_chunks: 
+					complete = True
+					break
+
+			if complete: break
+
+		# Combining the chunks
+		data = b""
+		for i in range(total_chunks):
+			data += chunks[i]
+		data.strip(b" " * padd)
+
+		# Creating new result
+		result = pResult(True, SUCESS, res.log, [fname, data], total_chunks)
+		return result
