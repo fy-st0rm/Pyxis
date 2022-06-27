@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.abspath("pyxis_api"))
+sys.path.append(os.path.abspath("../pyxis_api"))
 from pyxis_api import *
 
 class App:

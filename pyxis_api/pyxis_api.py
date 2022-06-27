@@ -163,15 +163,18 @@ class Pyxis_API:
 			return pQuery(None, None, SKIP, [f"Couldnt found file: {file_id}"], None)
 	
 	def store(self, fname, data, pub_key):
+		# Making packages
 		packages = self.pyxis_database.make_packages(fname, data)
 
 		pyxis_sucess("Sending packages")
+		# Gathering peers address
 		address = list(self.peers.values())
 		address.remove(self.addr)
 		peer = 0
 
 		pyxis_sucess(f"Storing into {len(packages)} chunks")
 
+		# Sending all packages
 		i = 0
 		res = None
 		for package in packages:
@@ -195,6 +198,7 @@ class Pyxis_API:
 		chunks = {}
 		complete = False
 
+		# Gathering peers
 		address = list(self.peers.values())
 		address.remove(self.addr)
 		peer = 0
@@ -219,6 +223,7 @@ class Pyxis_API:
 			fname = packages[0].fname
 			padd  = packages[0].padd
 
+			# Gathering chunks
 			for package in packages:
 				if package.offset not in chunks: chunks.update({package.offset: package.data})
 				if len(chunks) >= total_chunks: 
