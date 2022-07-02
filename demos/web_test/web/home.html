@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Test</title>
+	<script src="eel.js"></script>
+	<script>
+		eel.expose(notify);
+		function notify(msg) {
+			alert(msg)
+		}
+
+		eel.expose(reload);
+		function reload(user) {
+			document.getElementById("main-accname").innerHTML = "Welcome back! " + user;
+		}
+
+		window.onload = function() {
+			eel.get_name();
+		}
+				
+	</script>
+</head>
+<body>
+	<center>
+		<h1 id="main-accname"> PYXICHAT </h1>
+		<form>
+		</form>
+	</center>
+</body>
+</html>

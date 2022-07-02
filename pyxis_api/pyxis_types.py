@@ -19,6 +19,8 @@ SIGNUP = "<signup>"
 STORE = "<store>"
 FETCH = "<fetch>"
 
+GET_USER = "<get_user>"
+
 # TAGS:
 UNKNOWN = "<unknown>"
 SERVER = "<server>"

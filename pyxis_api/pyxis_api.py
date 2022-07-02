@@ -1,8 +1,8 @@
-from pyxis_includes import *
-from pyxis_utils    import *
-from pyxis_types    import *
+from pyxis_includes        import *
+from pyxis_utils           import *
+from pyxis_types           import *
 from pyxis_process_handler import *
-from pyxis_database import *
+from pyxis_database        import *
 
 
 class Pyxis_API:
@@ -22,6 +22,9 @@ class Pyxis_API:
 		self.pyxis_database = PyxisDatabase()
 
 		# Peers address
+		# {
+		#     "user id": "ip address",
+		# }
 		self.peers = {}
 
 		# Socket stuff
@@ -72,7 +75,6 @@ class Pyxis_API:
 	def __listener(self, listener):
 		while self.running:
 			recv, addr = pyxis_recv(self.sock)
-
 			if   recv.pid in self.process_handler.process: self.process_handler.handle_process(recv)
 			elif recv.cmd in self.cmds:					   self.__handle_cmds(recv, addr)
 			else:					       				   listener(recv, addr)

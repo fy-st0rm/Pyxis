@@ -82,4 +82,5 @@ class Cli_Handler:
 	def parse_query(self, qry, addr):
 		if   qry.cmd == SIGNUP: return self.signup(qry.params[0], qry.params[1], addr)
 		elif qry.cmd == LOGIN : return self.login(qry.params[0], qry.params[1], addr)
+		elif qry.cmd == GET_USER: pass
 

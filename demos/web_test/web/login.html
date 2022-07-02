@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Test</title>
+
+	<script src="eel.js"></script>
+	<script>
+		eel.expose(notify);
+		function notify(msg) {
+			alert(msg)
+		}
+	
+		eel.expose(main_page);
+		function main_page() {
+			location.assign("home.html");
+		}
+
+		function login() {
+			const uname = document.getElementById("name").value;
+			const pwd   = document.getElementById("pwd").value;
+			eel.login(uname, pwd);
+		}
+	</script>
+
+</head>
+<body>
+	<center>
+		<form>
+			Username: <input type="text"     id="name"><br> 
+			Password: <input type="password" id="pwd"> <br>
+			<input type="submit" onclick="login()" value="Login">
+			<a href="signup.html">Signup</a>
+		</form>
+	</center>
+</body>
+</html>

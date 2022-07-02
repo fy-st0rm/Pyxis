@@ -13,6 +13,10 @@ class Server:
 		self.sv_addr = (self.ip, self.port)
 		self.__create_server()
 
+		# address = {
+		#       user_id: ip address,
+		#       ....
+		# }
 		self.address = {}
 		self.running = True
 
