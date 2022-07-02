@@ -76,11 +76,9 @@ class App:
 		try:
 			self.api.set_listener(self.listener)
 
-			# self.__signup()
-			self.__login()
+			self.__signup()
+			# self.__login()
 			self.__connect()
-			self.__store()
-			self.__fetch()
 
 			while True:
 				text = input(f"{Colors.YELLOW}You> {Colors.DEFAULT}")

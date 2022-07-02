@@ -7,7 +7,7 @@ from pyxis_database import *
 
 class Pyxis_API:
 	def __init__(self):
-		self.sv_addr = ("192.168.1.68", 6969)
+		self.sv_addr = (socket.gethostbyname(socket.gethostname()), 6969)
 	
 		# Flags
 		self.running = True
