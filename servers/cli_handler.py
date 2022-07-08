@@ -20,6 +20,10 @@ class Cli_Handler:
 		self.__load_cli_database()
 	
 	# Database handler
+	def __get_user_id_from_name(self, username):
+		if username not in self.cli_data: return pQuery(None, None, FAILED, [f"Username `{username}` doesnt exists."], uuid.uuid4())
+		return pQuery(None, None, SUCESS, [f"Sucessfully got user id of user `{username}`.", self.cli_data[username]["uid"]], uuid.uuid4())
+
 	def __create_cli_database(self):
 		if not os.path.exists(os.path.join(FILE_NAME)):
 			with open(os.path.join(FILE_NAME), "w") as w:
@@ -43,7 +47,7 @@ class Cli_Handler:
 		return False
 
 	def signup(self, username, password, addr):
-		if username in self.cli_data: return pQuery(SERVER, UNKNOWN, FAILED, [f"Username `{username}` already exists. Please choose another one."], uuid.uuid4())
+		if username in self.cli_data: return pQuery(None, None, FAILED, [f"Username `{username}` already exists. Please choose another one."], uuid.uuid4())
 		
 		# Generating user uuid
 		user_uuid = str(hashlib.sha512(username.encode()).hexdigest())
@@ -57,12 +61,12 @@ class Cli_Handler:
 		self.__save_cli_database()
 
 		res = self.user_authenticated(user_uuid, addr)
-		if not res: return pQuery(SERVER, UNKNOWN, FAILED, [f"User `{username}` is already online."], uuid.uuid4())
+		if not res: return pQuery(None, None, FAILED, [f"User `{username}` is already online."], uuid.uuid4())
 
-		return pQuery(SERVER, UNKNOWN, SUCESS, [f"Sucessfully created a new account.", user_uuid, hashed], uuid.uuid4())
+		return pQuery(None, None, SUCESS, [f"Sucessfully created a new account.", user_uuid, hashed], uuid.uuid4())
 
 	def login(self, username, password, addr):
-		if username not in self.cli_data: return pQuery(SERVER, UNKNOWN, FAILED, [f"User with username `{username}` doesn`t exists."], uuid.uuid4())
+		if username not in self.cli_data: return pQuery(None, None, FAILED, [f"User with username `{username}` doesn`t exists."], uuid.uuid4())
 
 		# Gathering the info from database
 		user_uuid = self.cli_data[username]["uid"]
@@ -71,16 +75,16 @@ class Cli_Handler:
 
 		# Checking the password
 		supplied_hashed = str(hashlib.sha512((password + salt).encode()).hexdigest())
-		if supplied_hashed != hashed: return pQuery(SERVER, UNKNOWN, FAILED, [f"Password for user `{username}` didn`t matched."], uuid.uuid4())
+		if supplied_hashed != hashed: return pQuery(None, None, FAILED, [f"Password for user `{username}` didn`t matched."], uuid.uuid4())
 
 		res = self.user_authenticated(user_uuid, addr)
-		if not res: return pQuery(SERVER, UNKNOWN, FAILED, [f"User `{username}` is already online."], uuid.uuid4())
+		if not res: return pQuery(None, None, FAILED, [f"User `{username}` is already online."], uuid.uuid4())
 
-		return pQuery(SERVER, UNKNOWN, SUCESS, [f"Sucessfully logged in.", user_uuid, hashed], uuid.uuid4())
+		return pQuery(None, None, SUCESS, [f"Sucessfully logged in.", user_uuid, hashed], uuid.uuid4())
 	
 	# Query Handler
 	def parse_query(self, qry, addr):
 		if   qry.cmd == SIGNUP: return self.signup(qry.params[0], qry.params[1], addr)
 		elif qry.cmd == LOGIN : return self.login(qry.params[0], qry.params[1], addr)
-		elif qry.cmd == GET_USER: pass
+		elif qry.cmd == GET_USER: return self.__get_user_id_from_name(qry.params[0])
 

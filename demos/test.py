@@ -76,8 +76,8 @@ class App:
 		try:
 			self.api.set_listener(self.listener)
 
-			self.__signup()
-			# self.__login()
+			# self.__signup()
+			self.__login()
 			self.__connect()
 
 			while True:

@@ -40,7 +40,7 @@ class Server:
 
 	# Server query handler
 	def __handler(self, data, addr):
-		if data.cmd == SIGNUP or data.cmd == LOGIN:
+		if data.cmd == SIGNUP or data.cmd == LOGIN or data.cmd == GET_USER:
 			result = self.cli_handler.parse_query(data, addr)
 		else:
 			result = pQuery(self.sv_addr, addr, FAILED, [f"Unknown command `{data.cmd}`."], None)
